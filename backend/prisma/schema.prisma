@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Perfil {
+  admin
+  tecnico
+  funcionario
+}
+
+enum EstadoEquipamento {
+  disponivel
+  reservado
+  em_uso
+  manutencao
+  inativo
+}
+
+enum EstadoSchedule {
+  pendente
+  aprovado
+  cancelado
+  concluido
+}
+
+enum EstadoLoan {
+  ativo
+  devolvido
+  atrasado
+}
+
+enum EstadoMaintenance {
+  em_andamento
+  concluida
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  nome      String
+  email     String  @unique
+  senha     String
+  perfil    Perfil
+  createdAt DateTime @default(now())
+
+  schedules   Schedule[]
+  loans       Loan[]
+  maintenances Maintenance[] @relation("TecnicoMaintenance")
+  logs        Log[]
+  resetToken       String?
+  resetTokenExp    DateTime?
+  refreshToken String?
+}
+
+model Sector {
+  id    Int    @id @default(autoincrement())
+  nome  String
+
+  schedulesDestino Schedule[]
+  loansDestino     Loan[]
+  transfersFrom    Transfer[] @relation("fromSector")
+  transfersTo      Transfer[] @relation("toSector")
+}
+
+model Equipment {
+  id        Int    @id @default(autoincrement())
+  nome      String
+  codigo    String @unique
+  estado    EstadoEquipamento
+  createdAt DateTime @default(now())
+
+  logs Log[]
+  schedules   Schedule[]
+  loans       Loan[]
+  maintenances Maintenance[]
+  transfers    Transfer[]
+}
+
+model Schedule {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  equipmentId      Int
+  setorDestinoId   Int
+  dataInicio       DateTime
+  dataFim          DateTime
+  estado           EstadoSchedule
+  createdAt        DateTime @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  setorDestino Sector   @relation(fields: [setorDestinoId], references: [id])
+
+  loan Loan?
+}
+
+model Loan {
+  id               Int      @id @default(autoincrement())
+  scheduleId       Int?     @unique
+  userId           Int
+  equipmentId      Int
+  setorDestinoId   Int
+  dataSaida        DateTime
+  dataPrevista     DateTime
+  dataDevolucao    DateTime?
+  estado           EstadoLoan
+  createdAt        DateTime @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  setorDestino Sector   @relation(fields: [setorDestinoId], references: [id])
+
+  schedule Schedule? @relation(fields: [scheduleId], references: [id])
+}
+
+model Maintenance {
+  id            Int      @id @default(autoincrement())
+  equipmentId   Int
+  tecnicoId     Int
+  tipo          String
+  descricao     String
+  dataInicio    DateTime
+  dataFim       DateTime?
+  estado        EstadoMaintenance
+  createdAt     DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  tecnico   User      @relation("TecnicoMaintenance", fields: [tecnicoId], references: [id])
+}
+
+model Transfer {
+  id                Int      @id @default(autoincrement())
+  equipmentId       Int
+  setorOrigemId     Int
+  setorDestinoId    Int
+  dataTransferencia DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  setorOrigem Sector @relation("fromSector", fields: [setorOrigemId], references: [id])
+  setorDestino Sector @relation("toSector", fields: [setorDestinoId], references: [id])
+}
+
+model Log {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  acao           String
+  tabelaAfetada  String
+  registroId     Int
+  data           DateTime @default(now())
+  equipmentId    Int?
+  
+  user User @relation(fields: [userId], references: [id])
+  equipment Equipment? @relation(fields: [equipmentId], references: [id])
+
+}
