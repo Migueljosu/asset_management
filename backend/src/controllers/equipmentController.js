@@ -142,18 +142,50 @@ const deleteEquipment = async (req, res) => {
 // ================= GET ALL =================
 const getAllEquipments = async (req, res) => {
   try {
-    const equipments = await prisma.equipment.findMany({
-      include: {
-        logs: true, // ⚠️ precisa relação no schema
-      },
-    });
+    let { page = 1, limit = 10, estado, nome } = req.query;
+
+    page = Number(page);
+    limit = Number(limit);
+
+    const where = {};
+
+    // filtros dinâmicos
+    if (estado) {
+      where.estado = estado;
+    }
+
+    if (nome) {
+      where.nome = {
+        contains: nome,
+        mode: "insensitive",
+      };
+    }
+
+    const [total, equipments] = await Promise.all([
+      prisma.equipment.count({ where }),
+      prisma.equipment.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     res.json({
       success: true,
       data: equipments,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch {
-    res.status(500).json({ success: false, error: "Erro interno" });
+    res.status(500).json({
+      success: false,
+      error: "Erro interno",
+    });
   }
 };
 
