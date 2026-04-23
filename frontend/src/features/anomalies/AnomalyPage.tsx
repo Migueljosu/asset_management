@@ -87,6 +87,7 @@ export default function AnomalyPage() {
 
   const canEditOrDelete = user?.role === 'admin'
   const canResolve = user?.role === 'admin' || user?.role === 'tecnico'
+  const isFuncionario = user?.role === 'funcionario'
 
   return (
     <div className={`min-h-screen p-8 space-y-8 ${theme === 'dark' ? 'bg-zinc-900 text-zinc-100' : 'bg-gray-50 text-zinc-900'}`}>
@@ -100,26 +101,31 @@ export default function AnomalyPage() {
         />
       </div>
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Lista de Anomalias</h2>
-        <button
-          onClick={() => setShowList(!showList)}
-          className="bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded transition"
-        >
-          {showList ? 'Ocultar' : 'Mostrar'}
-        </button>
-      </div>
+      {/* Lista de anomalias só para admin e técnico */}
+      {!isFuncionario && (
+        <>
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Lista de Anomalias</h2>
+            <button
+              onClick={() => setShowList(!showList)}
+              className="bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded transition"
+            >
+              {showList ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
 
-      <div className={`transition-all duration-300 overflow-hidden ${showList ? 'max-h-[600px]' : 'max-h-0'}`}>
-        <div className="card">
-          <AnomalyList
-            refreshKey={refreshKey}
-            onEdit={canEditOrDelete ? setEditingAnomaly : undefined}
-            onDelete={canEditOrDelete ? handleDelete : undefined}
-            onResolve={canResolve ? handleResolve : undefined}
-          />
-        </div>
-      </div>
+          <div className={`transition-all duration-300 overflow-hidden ${showList ? 'max-h-[600px]' : 'max-h-0'}`}>
+            <div className="card">
+              <AnomalyList
+                refreshKey={refreshKey}
+                onEdit={canEditOrDelete ? setEditingAnomaly : undefined}
+                onDelete={canEditOrDelete ? handleDelete : undefined}
+                onResolve={canResolve ? handleResolve : undefined}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

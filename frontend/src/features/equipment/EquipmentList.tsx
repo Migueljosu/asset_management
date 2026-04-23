@@ -14,7 +14,10 @@ export default function EquipmentList() {
   const [submitting, setSubmitting] = useState(false)
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null)
 
-  const { token } = useAuth()
+  const { token, user } = useAuth()
+  const role = user?.role
+  const isAdmin = role === 'admin'
+  const isFuncionario = role === 'funcionario'
 
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState(true)
@@ -22,7 +25,12 @@ export default function EquipmentList() {
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 4
 
-  const filteredEquipments = equipments.filter((eq) =>
+  // Funcionário só vê equipamentos disponíveis
+  const visibleEquipments = isFuncionario
+    ? equipments.filter((eq) => eq.estado === 'disponivel')
+    : equipments
+
+  const filteredEquipments = visibleEquipments.filter((eq) =>
     eq.nome.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -32,9 +40,9 @@ export default function EquipmentList() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   )
+
   useEffect(() => {
     loadEquipments()
-    
   }, [token])
 
   useEffect(() => {
@@ -112,7 +120,6 @@ export default function EquipmentList() {
     })
   }
 
-  
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -125,20 +132,31 @@ export default function EquipmentList() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Equipamentos</h1>
-        <p className="text-muted-foreground">Gestão completa de equipamentos</p>
+        <h1 className="text-3xl font-bold">
+          {isFuncionario ? 'Equipamentos Disponíveis' : 'Equipamentos'}
+        </h1>
+        <p className="text-muted-foreground">
+          {isFuncionario
+            ? 'Consulte os equipamentos disponíveis para agendamento'
+            : 'Gestão completa de equipamentos'}
+        </p>
       </div>
 
-      <EquipmentForm
-        onSubmit={editingEquipment ? handleUpdate : handleCreate}
-        initialData={editingEquipment}
-        onCancelEdit={() => setEditingEquipment(null)}
-        loading={submitting}
-      />
+      {/* Form só para admin */}
+      {isAdmin && (
+        <EquipmentForm
+          onSubmit={editingEquipment ? handleUpdate : handleCreate}
+          initialData={editingEquipment}
+          onCancelEdit={() => setEditingEquipment(null)}
+          loading={submitting}
+        />
+      )}
 
       <div className="bg-card p-6 rounded-lg border border-border shadow-sm space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Lista</h2>
+          <h2 className="text-xl font-semibold">
+            {isFuncionario ? 'Lista de Disponíveis' : 'Lista'}
+          </h2>
 
           <button
             onClick={() => setExpanded(!expanded)}
@@ -157,7 +175,11 @@ export default function EquipmentList() {
         {expanded && (
           <div className="space-y-4">
             {filteredEquipments.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum equipamento encontrado.</p>
+              <p className="text-sm text-muted-foreground">
+                {isFuncionario
+                  ? 'Nenhum equipamento disponível no momento.'
+                  : 'Nenhum equipamento encontrado.'}
+              </p>
             )}
 
             {paginatedEquipments.map((eq) => (
@@ -168,26 +190,31 @@ export default function EquipmentList() {
                 <div>
                   <p className="font-semibold">{eq.nome}</p>
                   <p className="text-sm text-muted-foreground">{eq.codigo}</p>
-                  <p className="text-xs capitalize">{eq.estado}</p>
+                  {!isFuncionario && (
+                    <p className="text-xs capitalize">{eq.estado}</p>
+                  )}
                 </div>
 
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setEditingEquipment(eq)}
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                    disabled={submitting}
-                  >
-                    Editar
-                  </button>
+                {/* Botões só para admin */}
+                {isAdmin && (
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setEditingEquipment(eq)}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      disabled={submitting}
+                    >
+                      Editar
+                    </button>
 
-                  <button
-                    onClick={() => handleDelete(eq.id)}
-                    className="text-red-600 hover:text-red-800 font-medium"
-                    disabled={submitting}
-                  >
-                    Remover
-                  </button>
-                </div>
+                    <button
+                      onClick={() => handleDelete(eq.id)}
+                      className="text-red-600 hover:text-red-800 font-medium"
+                      disabled={submitting}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             {/* PAGINAÇÃO */}

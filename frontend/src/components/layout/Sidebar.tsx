@@ -48,10 +48,13 @@ export default function Sidebar() {
           Dashboard
         </NavLink>
 
-        <NavLink to="/equipments" className={linkClass}>
-          <Package size={18} />
-          Equipamentos
-        </NavLink>
+        {/* 🖥️ equipment - admin e funcionário (display só leitura para funcionário) */}
+        {(role === 'admin' || role === 'funcionario') && (
+          <NavLink to="/equipments" className={linkClass}>
+            <Package size={18} />
+            Equipamentos
+          </NavLink>
+        )}
 
         {(role === 'admin' || role === 'funcionario') && (
           <NavLink to="/loans" className={linkClass}>

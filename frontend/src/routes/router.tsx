@@ -97,8 +97,15 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // 🖥️ equipment
-      { path: 'equipments', element: withSuspense(<EquipmentList />) },
+      // 🖥️ equipment (admin e funcionário)
+      {
+        path: 'equipments',
+        element: (
+          <RoleRoute allowed={['admin', 'funcionario']}>
+            {withSuspense(<EquipmentList />)}
+          </RoleRoute>
+        ),
+      },
 
       // 🔧 maintenance (tecnico)
       {
