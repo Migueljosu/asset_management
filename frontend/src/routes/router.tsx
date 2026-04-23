@@ -85,8 +85,11 @@ export const router = createBrowserRouter([
         element: withSuspense(<SettingsPage />),
       },
 
-      // 💰 loans
-      { path: 'loans', element: withSuspense(<LoansPage />) },
+      // 💰 loans (só admin)
+      {
+        path: 'loans',
+        element: <RoleRoute allowed={['admin']}>{withSuspense(<LoansPage />)}</RoleRoute>,
+      },
 
       {
         path: 'schedules',

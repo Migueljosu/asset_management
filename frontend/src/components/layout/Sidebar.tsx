@@ -56,7 +56,8 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        {(role === 'admin' || role === 'funcionario') && (
+        {/* 💰 loans - só admin */}
+        {role === 'admin' && (
           <NavLink to="/loans" className={linkClass}>
             <Calendar size={18} />
             Empréstimos
