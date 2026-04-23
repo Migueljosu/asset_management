@@ -1,6 +1,21 @@
 const prisma = require("../utils/prisma");
 const { createNotification } = require("./notificationController");
 
+// Helper para notificar todos os admins
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
+
 const startMaintenance = async (req, res) => {
   const { equipmentId, tipo, descricao } = req.body;
 
@@ -38,7 +53,6 @@ const startMaintenance = async (req, res) => {
         data: { estado: "manutencao" },
       });
 
-      // log
       await tx.log.create({
         data: {
           userId: req.user.id,
@@ -48,12 +62,19 @@ const startMaintenance = async (req, res) => {
         },
       });
 
-      return maintenance;
+      return { maintenance, equipment };
     });
+
+    // Notificar admins que técnico iniciou manutenção
+    await notifyAdmins(
+      "Manutenção Iniciada",
+      `O técnico iniciou manutenção no equipamento ${result.equipment.nome} (${result.equipment.codigo}). Tipo: ${tipo}.`,
+      "warning"
+    );
 
     res.json({
       success: true,
-      data: result,
+      data: result.maintenance,
     });
   } catch (error) {
     console.error("[startMaintenance]", error);
@@ -71,6 +92,7 @@ const finishMaintenance = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       const maintenance = await tx.maintenance.findUnique({
         where: { id: Number(id) },
+        include: { equipment: true },
       });
 
       if (!maintenance || maintenance.estado !== "em_andamento") {
@@ -109,32 +131,20 @@ const finishMaintenance = async (req, res) => {
         },
       });
 
-      return true;
+      return maintenance;
     });
 
     // Notificar admin e técnico que a manutenção foi concluída
-    const equipment = await prisma.equipment.findUnique({
-      where: { id: maintenance.equipmentId },
-    });
-
-    const admins = await prisma.user.findMany({
-      where: { perfil: "admin" },
-      select: { id: true },
-    });
-
-    for (const u of admins) {
-      await createNotification(
-        u.id,
-        "Manutenção Concluída",
-        `A manutenção do equipamento ${equipment.nome} (${equipment.codigo}) foi concluída com sucesso.`,
-        "success"
-      );
-    }
+    await notifyAdmins(
+      "Manutenção Concluída",
+      `A manutenção do equipamento ${result.equipment.nome} (${result.equipment.codigo}) foi concluída com sucesso.`,
+      "success"
+    );
 
     await createNotification(
-      maintenance.tecnicoId,
+      result.tecnicoId,
       "Manutenção Concluída",
-      `A manutenção do equipamento ${equipment.nome} (${equipment.codigo}) foi concluída com sucesso.`,
+      `A manutenção do equipamento ${result.equipment.nome} (${result.equipment.codigo}) foi concluída com sucesso.`,
       "success"
     );
 
@@ -213,6 +223,7 @@ const cancelMaintenance = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       const maintenance = await tx.maintenance.findUnique({
         where: { id: Number(id) },
+        include: { equipment: true },
       });
 
       if (!maintenance || maintenance.estado !== "em_andamento") {
@@ -241,8 +252,15 @@ const cancelMaintenance = async (req, res) => {
         },
       });
 
-      return true;
+      return maintenance;
     });
+
+    // Notificar admins que técnico cancelou manutenção
+    await notifyAdmins(
+      "Manutenção Cancelada",
+      `O técnico cancelou a manutenção do equipamento ${result.equipment.nome} (${result.equipment.codigo}).`,
+      "warning"
+    );
 
     res.json({
       success: true,

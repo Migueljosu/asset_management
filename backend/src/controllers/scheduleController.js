@@ -2,6 +2,21 @@ const prisma = require("../utils/prisma");
 const { createLog } = require("../utils/logger");
 const { createNotification } = require("./notificationController");
 
+// Helper para notificar todos os admins
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
+
 const hasConflict = async ({ equipmentId, dataInicio, dataFim, excludeId, tx = prisma }) => {
   return tx.schedule.findFirst({
     where: {
@@ -80,6 +95,13 @@ const createSchedule = async (req, res) => {
       tabelaAfetada: "Schedule",
       registroId: schedule.id,
     });
+
+    // Notificar admins que novo agendamento foi criado
+    await notifyAdmins(
+      "Novo Agendamento",
+      `${schedule.user.nome} agendou o equipamento ${schedule.equipment.nome} (${schedule.equipment.codigo}) para o setor ${schedule.setorDestino.nome}. Período: ${new Date(dataInicio).toLocaleDateString('pt-PT')} a ${new Date(dataFim).toLocaleDateString('pt-PT')}.`,
+      "info"
+    );
 
     res.status(201).json({
       success: true,

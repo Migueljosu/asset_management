@@ -1,5 +1,20 @@
 const prisma = require("../utils/prisma");
 const { createEquipmentSchema, updateEquipmentSchema } = require("../validators/equipmentValidator");
+const { createNotification } = require("./notificationController");
+
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
 
 // ================= CREATE =================
 const createEquipment = async (req, res) => {
@@ -35,6 +50,13 @@ const createEquipment = async (req, res) => {
         registroId: equipment.id,
       },
     });
+
+    // Notificar admin que novo equipamento foi criado
+    await notifyAdmins(
+      "Novo Equipamento",
+      `O equipamento ${equipment.nome} (${equipment.codigo}) foi registado no sistema.`,
+      "success"
+    );
 
     res.status(201).json({
       success: true,

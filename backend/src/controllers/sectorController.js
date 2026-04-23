@@ -1,4 +1,19 @@
 const prisma = require("../utils/prisma");
+const { createNotification } = require("./notificationController");
+
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
 
 const createSector = async (req, res) => {
   try {
@@ -25,6 +40,13 @@ const createSector = async (req, res) => {
         registroId: sector.id,
       },
     });
+
+    // Notificar admin que novo setor foi criado
+    await notifyAdmins(
+      "Novo Setor",
+      `O setor ${sector.nome} foi criado.`,
+      "success"
+    );
 
     res.status(201).json({
       success: true,
@@ -158,6 +180,13 @@ const deleteSector = async (req, res) => {
         registroId: Number(id),
       },
     });
+
+    // Notificar admin que setor foi eliminado
+    await notifyAdmins(
+      "Setor Eliminado",
+      `O setor ${sector.nome} foi eliminado.`,
+      "warning"
+    );
 
     res.json({
       success: true,

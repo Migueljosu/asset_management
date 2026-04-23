@@ -1,4 +1,19 @@
 const prisma = require("../utils/prisma");
+const { createNotification } = require("./notificationController");
+
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
 
 const getAllLoans = async (req, res) => {
   try {
@@ -99,6 +114,13 @@ const createLoan = async (req, res) => {
       return loan;
     });
 
+    // Notificar admin que novo empréstimo foi criado
+    await notifyAdmins(
+      "Novo Empréstimo",
+      `${result.user.nome} criou um empréstimo do equipamento ${result.equipment.nome} (${result.equipment.codigo}) para o setor ${result.setorDestino.nome}.`,
+      "info"
+    );
+
     res.status(201).json({
       success: true,
       data: result,
@@ -147,6 +169,19 @@ const returnLoan = async (req, res) => {
         data: { estado: "disponivel" },
       });
     });
+
+    // Notificar admin que equipamento foi devolvido
+    const loanInfo = await prisma.loan.findUnique({
+      where: { id: Number(loanId) },
+      include: { equipment: true, user: true },
+    });
+    if (loanInfo) {
+      await notifyAdmins(
+        "Equipamento Devolvido",
+        `${loanInfo.user.nome} devolveu o equipamento ${loanInfo.equipment.nome} (${loanInfo.equipment.codigo}).`,
+        "success"
+      );
+    }
 
     res.json({
       success: true,

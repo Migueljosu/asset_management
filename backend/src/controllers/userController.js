@@ -1,6 +1,21 @@
 const prisma = require("../utils/prisma");
 const bcrypt = require("bcrypt");
 const { createUserSchema, updateUserSchema, changePasswordSchema, updateProfileSchema } = require("../validators/userValidator");
+const { createNotification } = require("./notificationController");
+
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
 
 const createUser = async (req, res) => {
   try {
@@ -44,6 +59,13 @@ const createUser = async (req, res) => {
         registroId: user.id,
       },
     });
+
+    // Notificar admin que novo utilizador foi criado
+    await notifyAdmins(
+      "Novo Utilizador",
+      `O utilizador ${user.nome} (${user.email}) com perfil ${user.perfil} foi criado.`,
+      "success"
+    );
 
     res.status(201).json({
       success: true,
@@ -260,6 +282,13 @@ const deleteUser = async (req, res) => {
         registroId: Number(id),
       },
     });
+
+    // Notificar admin que utilizador foi eliminado
+    await notifyAdmins(
+      "Utilizador Eliminado",
+      `O utilizador ${user.nome} (${user.email}) foi eliminado do sistema.`,
+      "warning"
+    );
 
     res.json({
       success: true,

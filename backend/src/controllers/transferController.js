@@ -1,4 +1,19 @@
 const prisma = require("../utils/prisma");
+const { createNotification } = require("./notificationController");
+
+const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+    for (const u of admins) {
+      await createNotification(u.id, titulo, mensagem, tipo);
+    }
+  } catch (e) {
+    console.error("[notifyAdmins] erro:", e);
+  }
+};
 
 const createTransfer = async (req, res) => {
   const { equipmentId, setorDestinoId } = req.body;
@@ -64,6 +79,13 @@ const createTransfer = async (req, res) => {
 
       return transfer;
     });
+
+    // Notificar admin que equipamento foi transferido
+    await notifyAdmins(
+      "Transferência de Equipamento",
+      `O equipamento ${result.equipment.nome} (${result.equipment.codigo}) foi transferido do setor ${result.setorOrigem.nome} para ${result.setorDestino.nome}.`,
+      "info"
+    );
 
     res.status(201).json({
       success: true,
