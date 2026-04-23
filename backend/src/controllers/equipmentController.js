@@ -1,16 +1,11 @@
 const prisma = require("../utils/prisma");
+const { createEquipmentSchema, updateEquipmentSchema } = require("../validators/equipmentValidator");
 
 // ================= CREATE =================
 const createEquipment = async (req, res) => {
   try {
-    const { nome, codigo } = req.body;
-
-    if (!nome || !codigo) {
-      return res.status(400).json({
-        success: false,
-        error: "Nome e código são obrigatórios",
-      });
-    }
+    const data = createEquipmentSchema.parse(req.body);
+    const { nome, codigo } = data;
 
     const exists = await prisma.equipment.findUnique({
       where: { codigo },
@@ -45,7 +40,15 @@ const createEquipment = async (req, res) => {
       success: true,
       data: equipment,
     });
-  } catch {
+  } catch (error) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Dados inválidos",
+        details: error.errors,
+      });
+    }
+    console.error("[createEquipment]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -53,9 +56,10 @@ const createEquipment = async (req, res) => {
 // ================= UPDATE =================
 const updateEquipment = async (req, res) => {
   const { id } = req.params;
-  const { nome, estado } = req.body;
 
   try {
+    const data = updateEquipmentSchema.parse(req.body);
+
     const equipment = await prisma.equipment.findUnique({
       where: { id: Number(id) },
     });
@@ -70,8 +74,8 @@ const updateEquipment = async (req, res) => {
     const updated = await prisma.equipment.update({
       where: { id: Number(id) },
       data: {
-        nome: nome || equipment.nome,
-        estado: estado || equipment.estado,
+        nome: data.nome || equipment.nome,
+        estado: data.estado || equipment.estado,
       },
     });
 
@@ -88,7 +92,15 @@ const updateEquipment = async (req, res) => {
       success: true,
       data: updated,
     });
-  } catch {
+  } catch (error) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Dados inválidos",
+        details: error.errors,
+      });
+    }
+    console.error("[updateEquipment]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -134,7 +146,8 @@ const deleteEquipment = async (req, res) => {
       success: true,
       message: "Equipamento deletado",
     });
-  } catch {
+  } catch (error) {
+    console.error("[deleteEquipment]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -181,7 +194,8 @@ const getAllEquipments = async (req, res) => {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllEquipments]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -212,7 +226,8 @@ const getEquipmentById = async (req, res) => {
       success: true,
       data: equipment,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getEquipmentById]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };

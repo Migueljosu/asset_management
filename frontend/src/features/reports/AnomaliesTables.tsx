@@ -26,6 +26,7 @@ export default function AnomaliesTable({ data }: Props) {
         <thead>
           <tr className="text-left border-b">
             <th>Título</th>
+            <th>Equipamento</th>
             <th>Severidade</th>
             <th>Status</th>
             <th>Data</th>
@@ -36,6 +37,7 @@ export default function AnomaliesTable({ data }: Props) {
           {data.map(a => (
             <tr key={a.id} className="border-b hover:bg-gray-50">
               <td>{a.title}</td>
+              <td>{a.equipmentName || '-'}</td>
               <td>{a.severity}</td>
               <td>{a.status}</td>
               <td>{new Date(a.createdAt).toLocaleDateString()}</td>

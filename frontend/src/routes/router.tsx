@@ -79,10 +79,10 @@ export const router = createBrowserRouter([
         element: <RoleRoute allowed={['admin']}>{withSuspense(<TransfersPage />)}</RoleRoute>,
       },
 
-      // ⚙️ settings (admin)
+      // ⚙️ settings (todos autenticados)
       {
         path: 'settings',
-        element: <RoleRoute allowed={['admin']}>{withSuspense(<SettingsPage />)}</RoleRoute>,
+        element: withSuspense(<SettingsPage />),
       },
 
       // 💰 loans

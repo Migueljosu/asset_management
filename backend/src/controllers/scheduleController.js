@@ -1,5 +1,6 @@
 const prisma = require("../utils/prisma");
 const { createLog } = require("../utils/logger");
+const { createNotification } = require("./notificationController");
 
 const hasConflict = async ({ equipmentId, dataInicio, dataFim, excludeId, tx = prisma }) => {
   return tx.schedule.findFirst({
@@ -84,7 +85,8 @@ const createSchedule = async (req, res) => {
       success: true,
       data: schedule,
     });
-  } catch {
+  } catch (error) {
+    console.error("[createSchedule]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -118,7 +120,8 @@ const getAllSchedules = async (req, res) => {
       success: true,
       data: schedules,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllSchedules]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -195,11 +198,20 @@ const approveSchedule = async (req, res) => {
       return updated;
     });
 
+    // Notificar o funcionário que criou o agendamento
+    await createNotification(
+      result.userId,
+      "Agendamento Aprovado",
+      `O seu agendamento para o equipamento ${result.equipment.nome} foi aprovado. Período: ${new Date(result.dataInicio).toLocaleDateString('pt-PT')} a ${new Date(result.dataFim).toLocaleDateString('pt-PT')}.`,
+      "success"
+    );
+
     res.json({
       success: true,
       data: result,
     });
   } catch (error) {
+    console.error("[approveSchedule]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -264,11 +276,20 @@ const cancelSchedule = async (req, res) => {
       return updated;
     });
 
+    // Notificar o funcionário que o agendamento foi cancelado
+    await createNotification(
+      result.userId,
+      "Agendamento Cancelado",
+      `O seu agendamento para o equipamento ${result.equipment.nome} foi cancelado.`,
+      "warning"
+    );
+
     res.json({
       success: true,
       data: result,
     });
   } catch (error) {
+    console.error("[cancelSchedule]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -336,6 +357,7 @@ const completeSchedule = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    console.error("[completeSchedule]", error);
     res.status(400).json({
       success: false,
       error: error.message,

@@ -29,7 +29,8 @@ const getAllLoans = async (req, res) => {
       success: true,
       data: loans,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllLoans]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -103,6 +104,7 @@ const createLoan = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    console.error("[createLoan]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -151,6 +153,7 @@ const returnLoan = async (req, res) => {
       message: "Devolvido com sucesso",
     });
   } catch (error) {
+    console.error("[returnLoan]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -197,7 +200,8 @@ const deleteLoan = async (req, res) => {
       success: true,
       message: "Empréstimo eliminado com sucesso",
     });
-  } catch {
+  } catch (error) {
+    console.error("[deleteLoan]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -206,3 +210,4 @@ const deleteLoan = async (req, res) => {
 };
 
 module.exports = { getAllLoans, createLoan, returnLoan, deleteLoan };
+

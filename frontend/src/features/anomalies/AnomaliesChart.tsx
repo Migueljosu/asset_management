@@ -1,4 +1,4 @@
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts'
 import { SeverityStats } from '../reports/types'
 
 interface Props {
@@ -17,9 +17,9 @@ export default function AnomalyChart({ data }: Props) {
   }
 
   const chartData = [
-    { name: 'Baixa', value: data.low },
-    { name: 'Média', value: data.medium },
-    { name: 'Alta', value: data.high },
+    { name: 'Baixa', value: data.low, color: '#22c55e' },
+    { name: 'Média', value: data.medium, color: '#f59e0b' },
+    { name: 'Alta', value: data.high, color: '#ef4444' },
   ]
 
   return (
@@ -32,7 +32,11 @@ export default function AnomalyChart({ data }: Props) {
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="value" />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

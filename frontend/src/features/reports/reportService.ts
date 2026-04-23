@@ -1,28 +1,30 @@
 import { anomalyService } from '../anomalies/anomalyService'
+import { equipmentService } from '../equipment/equipmentService'
 
-async function getBaseData() {
-  const anomalies = await anomalyService.getAll()
-  const equipments: any[] = []
-
+async function getBaseData(token?: string) {
+  const [anomalies, equipments] = await Promise.all([
+    anomalyService.getAll(token),
+    equipmentService.getAll(token || ''),
+  ])
   return { anomalies, equipments }
 }
 
 export const reportService = {
 
-  async getSystemStats() {
-    const { anomalies, equipments } = await getBaseData()
+  async getSystemStats(token?: string) {
+    const { anomalies, equipments } = await getBaseData(token)
 
     return {
       totalEquipments: equipments.length,
       totalAnomalies: anomalies.length,
       resolvedAnomalies: anomalies.filter(a => a.status === 'resolved').length,
       maintenanceAnomalies: anomalies.filter(a => a.status === 'in_progress').length,
-      borrowedEquipments: 0
+      borrowedEquipments: equipments.filter((e: { estado: string }) => e.estado === 'em_uso').length,
     }
   },
 
-  async getSeverityStats() {
-    const { anomalies } = await getBaseData()
+  async getSeverityStats(token?: string) {
+    const { anomalies } = await getBaseData(token)
 
     return {
       low: anomalies.filter(a => a.severity === 'low').length,
@@ -31,8 +33,8 @@ export const reportService = {
     }
   },
 
-  async getStatusStats() {
-    const { anomalies } = await getBaseData()
+  async getStatusStats(token?: string) {
+    const { anomalies } = await getBaseData(token)
 
     return {
       reported: anomalies.filter(a => a.status === 'reported').length,
@@ -40,5 +42,5 @@ export const reportService = {
       resolved: anomalies.filter(a => a.status === 'resolved').length
     }
   }
-
 }
+

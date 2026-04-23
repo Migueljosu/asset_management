@@ -10,6 +10,8 @@ const {
   updateUser,
   deleteUser,
   getProfile,
+  changePassword,
+  updateProfile,
 } = require("../controllers/userController");
 
 // perfil
@@ -37,6 +39,8 @@ const {
  *               $ref: '#/components/schemas/User'
  */
 router.get("/me", auth, getProfile);
+router.put("/me", auth, updateProfile);
+router.put("/me/password", auth, changePassword);
 
 // admin
 router.post("/", auth, role("admin"), createUser);

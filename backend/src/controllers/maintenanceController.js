@@ -1,4 +1,5 @@
 const prisma = require("../utils/prisma");
+const { createNotification } = require("./notificationController");
 
 const startMaintenance = async (req, res) => {
   const { equipmentId, tipo, descricao } = req.body;
@@ -55,6 +56,7 @@ const startMaintenance = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    console.error("[startMaintenance]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -110,11 +112,38 @@ const finishMaintenance = async (req, res) => {
       return true;
     });
 
+    // Notificar admin e técnico que a manutenção foi concluída
+    const equipment = await prisma.equipment.findUnique({
+      where: { id: maintenance.equipmentId },
+    });
+
+    const admins = await prisma.user.findMany({
+      where: { perfil: "admin" },
+      select: { id: true },
+    });
+
+    for (const u of admins) {
+      await createNotification(
+        u.id,
+        "Manutenção Concluída",
+        `A manutenção do equipamento ${equipment.nome} (${equipment.codigo}) foi concluída com sucesso.`,
+        "success"
+      );
+    }
+
+    await createNotification(
+      maintenance.tecnicoId,
+      "Manutenção Concluída",
+      `A manutenção do equipamento ${equipment.nome} (${equipment.codigo}) foi concluída com sucesso.`,
+      "success"
+    );
+
     res.json({
       success: true,
       message: "Manutenção concluída",
     });
   } catch (error) {
+    console.error("[finishMaintenance]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -136,7 +165,8 @@ const getAllMaintenances = async (req, res) => {
       success: true,
       data: maintenances,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllMaintenances]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -167,7 +197,8 @@ const getMaintenanceById = async (req, res) => {
       success: true,
       data: maintenance,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getMaintenanceById]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -218,6 +249,7 @@ const cancelMaintenance = async (req, res) => {
       message: "Manutenção cancelada",
     });
   } catch (error) {
+    console.error("[cancelMaintenance]", error);
     res.status(400).json({
       success: false,
       error: error.message,

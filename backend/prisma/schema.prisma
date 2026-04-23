@@ -65,6 +65,7 @@ model User {
   maintenances Maintenance[] @relation("TecnicoMaintenance")
   anomalies   Anomaly[]
   logs        Log[]
+  notifications Notification[]
   resetToken       String?
   resetTokenExp    DateTime?
   refreshToken String?
@@ -184,4 +185,16 @@ model Anomaly {
 
   user      User      @relation(fields: [userId], references: [id])
   equipment Equipment @relation(fields: [equipmentId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  titulo    String
+  mensagem  String
+  tipo      String   @default("info")
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }

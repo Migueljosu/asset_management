@@ -30,7 +30,8 @@ const createSector = async (req, res) => {
       success: true,
       data: sector,
     });
-  } catch {
+  } catch (error) {
+    console.error("[createSector]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -48,7 +49,8 @@ const getAllSectors = async (req, res) => {
       success: true,
       data: sectors,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllSectors]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -75,7 +77,8 @@ const getSectorById = async (req, res) => {
       success: true,
       data: sector,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getSectorById]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -119,7 +122,8 @@ const updateSector = async (req, res) => {
       success: true,
       data: updated,
     });
-  } catch {
+  } catch (error) {
+    console.error("[updateSector]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -166,7 +170,7 @@ const deleteSector = async (req, res) => {
         error: "Não pode eliminar setor em uso",
       });
     }
-
+    console.error("[deleteSector]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",

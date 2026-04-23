@@ -1,16 +1,11 @@
 const prisma = require("../utils/prisma");
 const bcrypt = require("bcrypt");
+const { createUserSchema, updateUserSchema, changePasswordSchema, updateProfileSchema } = require("../validators/userValidator");
 
 const createUser = async (req, res) => {
-  const { nome, email, senha, perfil } = req.body;
-
   try {
-    if (!nome || !email || !senha || !perfil) {
-      return res.status(400).json({
-        success: false,
-        error: "nome, email, senha e perfil são obrigatórios",
-      });
-    }
+    const data = createUserSchema.parse(req.body);
+    const { nome, email, senha, perfil } = data;
 
     const exists = await prisma.user.findUnique({
       where: { email },
@@ -54,7 +49,15 @@ const createUser = async (req, res) => {
       success: true,
       data: user,
     });
-  } catch {
+  } catch (error) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Dados inválidos",
+        details: error.errors,
+      });
+    }
+    console.error("[createUser]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -104,7 +107,8 @@ const getAllUsers = async (req, res) => {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllUsers]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -135,16 +139,19 @@ const getUserById = async (req, res) => {
       success: true,
       data: user,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getUserById]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
 
 const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { nome, email, perfil, senha } = req.body;
 
   try {
+    const data = updateUserSchema.parse(req.body);
+    const { nome, email, perfil, senha } = data;
+
     const user = await prisma.user.findUnique({
       where: { id: Number(id) },
     });
@@ -205,7 +212,15 @@ const updateUser = async (req, res) => {
       success: true,
       data: updated,
     });
-  } catch {
+  } catch (error) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Dados inválidos",
+        details: error.errors,
+      });
+    }
+    console.error("[updateUser]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -250,7 +265,8 @@ const deleteUser = async (req, res) => {
       success: true,
       message: "Usuário deletado",
     });
-  } catch {
+  } catch (error) {
+    console.error("[deleteUser]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -274,7 +290,135 @@ const getProfile = async (req, res) => {
       success: true,
       data: user,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getProfile]", error);
+    res.status(500).json({ success: false, error: "Erro interno" });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const data = changePasswordSchema.parse(req.body);
+    const { senhaAtual, novaSenha } = data;
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "Usuário não encontrado",
+      });
+    }
+
+    const validPassword = await bcrypt.compare(senhaAtual, user.senha);
+
+    if (!validPassword) {
+      return res.status(401).json({
+        success: false,
+        error: "Senha atual incorreta",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(novaSenha, 10);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { senha: hashedPassword },
+    });
+
+    await prisma.log.create({
+      data: {
+        userId: req.user.id,
+        acao: "ALTERAR_SENHA",
+        tabelaAfetada: "User",
+        registroId: user.id,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Senha alterada com sucesso",
+    });
+  } catch (error) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Dados inválidos",
+        details: error.errors,
+      });
+    }
+    console.error("[changePassword]", error);
+    res.status(500).json({ success: false, error: "Erro interno" });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    const { nome, email } = data;
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "Usuário não encontrado",
+      });
+    }
+
+    if (email && email !== user.email) {
+      const emailExists = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          error: "Email já registrado",
+        });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        nome: nome || user.nome,
+        email: email || user.email,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+      },
+    });
+
+    await prisma.log.create({
+      data: {
+        userId: req.user.id,
+        acao: "ATUALIZAR_PERFIL",
+        tabelaAfetada: "User",
+        registroId: updated.id,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    if (error.name === "ZodError") {
+      return res.status(400).json({
+        success: false,
+        error: "Dados inválidos",
+        details: error.errors,
+      });
+    }
+    console.error("[updateProfile]", error);
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -286,4 +430,6 @@ module.exports = {
   updateUser,
   deleteUser,
   getProfile,
+  changePassword,
+  updateProfile,
 };

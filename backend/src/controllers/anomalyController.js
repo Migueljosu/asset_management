@@ -1,4 +1,5 @@
 const prisma = require("../utils/prisma");
+const { createNotification } = require("./notificationController");
 
 const createAnomaly = async (req, res) => {
   const { equipmentId, titulo, descricao, severidade } = req.body;
@@ -53,11 +54,29 @@ const createAnomaly = async (req, res) => {
       },
     });
 
+    // Notificar admin e técnicos
+    const adminsETecnicos = await prisma.user.findMany({
+      where: {
+        perfil: { in: ["admin", "tecnico"] },
+      },
+      select: { id: true },
+    });
+
+    for (const u of adminsETecnicos) {
+      await createNotification(
+        u.id,
+        "Nova Anomalia Reportada",
+        `O equipamento ${equipment.nome} (${equipment.codigo}) teve uma anomalia reportada: ${titulo}. Severidade: ${severidade}.`,
+        severidade === "alta" ? "error" : severidade === "media" ? "warning" : "info"
+      );
+    }
+
     res.status(201).json({
       success: true,
       data: anomaly,
     });
-  } catch {
+  } catch (error) {
+    console.error("[createAnomaly]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -96,7 +115,8 @@ const getAllAnomalies = async (req, res) => {
       success: true,
       data: anomalies,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllAnomalies]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -134,7 +154,8 @@ const getAnomalyById = async (req, res) => {
       success: true,
       data: anomaly,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAnomalyById]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -193,7 +214,8 @@ const updateAnomaly = async (req, res) => {
       success: true,
       data: updated,
     });
-  } catch {
+  } catch (error) {
+    console.error("[updateAnomaly]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -244,11 +266,20 @@ const resolveAnomaly = async (req, res) => {
       },
     });
 
+    // Notificar quem reportou a anomalia
+    await createNotification(
+      anomaly.userId,
+      "Anomalia Resolvida",
+      `A anomalia "${anomaly.titulo}" no equipamento ${updated.equipment.nome} foi resolvida.`,
+      "success"
+    );
+
     res.json({
       success: true,
       data: updated,
     });
-  } catch {
+  } catch (error) {
+    console.error("[resolveAnomaly]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -289,7 +320,8 @@ const deleteAnomaly = async (req, res) => {
       success: true,
       message: "Anomalia eliminada com sucesso",
     });
-  } catch {
+  } catch (error) {
+    console.error("[deleteAnomaly]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",

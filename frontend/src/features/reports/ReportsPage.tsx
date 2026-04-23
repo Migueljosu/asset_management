@@ -7,36 +7,48 @@ import MaintenanceChart from '../manutention/MaintenanceChart'
 
 import { reportService } from './reportService'
 import { anomalyService } from '../anomalies/anomalyService'
+import { useAuth } from '@/context/AuthContext'
 
 import { SystemStats, SeverityStats, StatusStats } from './types'
 import { Anomaly } from '../anomalies/types'
 
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { toast } from 'sonner'
 
 export default function ReportsPage() {
+  const { token } = useAuth()
 
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null)
   const [severityStats, setSeverityStats] = useState<SeverityStats | null>(null)
   const [statusStats, setStatusStats] = useState<StatusStats | null>(null)
   const [anomalies, setAnomalies] = useState<Anomaly[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (token) loadData()
+  }, [token])
 
   async function loadData() {
-    const [system, severity, status, anomaliesData] = await Promise.all([
-      reportService.getSystemStats(),
-      reportService.getSeverityStats(),
-      reportService.getStatusStats(),
-      anomalyService.getAll()
-    ])
+    try {
+      setLoading(true)
+      const [system, severity, status, anomaliesData] = await Promise.all([
+        reportService.getSystemStats(token!),
+        reportService.getSeverityStats(token!),
+        reportService.getStatusStats(token!),
+        anomalyService.getAll(token!)
+      ])
 
-    setSystemStats(system)
-    setSeverityStats(severity)
-    setStatusStats(status)
-    setAnomalies(anomaliesData)
+      setSystemStats(system)
+      setSeverityStats(severity)
+      setStatusStats(status)
+      setAnomalies(anomaliesData)
+    } catch (err: any) {
+      console.error('Erro ao carregar relatórios:', err)
+      toast.error(err.message || 'Erro ao carregar relatórios')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function exportPDF() {

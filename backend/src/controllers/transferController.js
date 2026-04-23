@@ -70,6 +70,7 @@ const createTransfer = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    console.error("[createTransfer]", error);
     res.status(400).json({
       success: false,
       error: error.message,
@@ -92,7 +93,8 @@ const getAllTransfers = async (req, res) => {
       success: true,
       data: transfers,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getAllTransfers]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -124,7 +126,8 @@ const getTransferById = async (req, res) => {
       success: true,
       data: transfer,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getTransferById]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -149,7 +152,8 @@ const getTransfersByEquipment = async (req, res) => {
       success: true,
       data: transfers,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getTransfersByEquipment]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -185,7 +189,8 @@ const getTransferableEquipments = async (req, res) => {
       success: true,
       data: items,
     });
-  } catch {
+  } catch (error) {
+    console.error("[getTransferableEquipments]", error);
     res.status(500).json({
       success: false,
       error: "Erro interno",
@@ -200,3 +205,4 @@ module.exports = {
   getTransfersByEquipment,
   getTransferableEquipments,
 };
+

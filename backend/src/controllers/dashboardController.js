@@ -40,8 +40,8 @@ const getDashboardStats = async (req, res) => {
         _count: true,
       }),
 
-      prisma.maintenance.count({
-        where: { estado: "em_andamento" },
+      prisma.anomaly.count({
+        where: { estado: { not: "resolvida" } },
       }),
 
       prisma.user.count(),
