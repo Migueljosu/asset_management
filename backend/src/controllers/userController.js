@@ -188,6 +188,9 @@ const getProfile = async (req, res) => {
       },
     });
 
+    // 🔥 EVITA CACHE (ESSENCIAL)
+    res.set("Cache-Control", "no-store");
+
     res.json({
       success: true,
       data: user,
@@ -196,7 +199,6 @@ const getProfile = async (req, res) => {
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
-
 
 module.exports = {
   getAllUsers,
