@@ -3,7 +3,6 @@
 import { useUsers } from './hooks/useUsers'
 import UserForm from './UserForm'
 import UserList from './UserList'
-import BackToHome from '../../components/ui/BackToHome'
 
 export default function UsersPage() {
   const {
@@ -13,13 +12,10 @@ export default function UsersPage() {
     setSearch,
     filterRole,
     setFilterRole,
-    filterStatus,
-    setFilterStatus,
     editingUser,
     setEditingUser,
     saveUser,
     removeUser,
-    toggleBlock,
   } = useUsers()
 
   return (
@@ -46,13 +42,10 @@ export default function UsersPage() {
           users={users}
           onEdit={setEditingUser}
           onDelete={removeUser}
-          onBlock={toggleBlock}
           search={search}
           setSearch={setSearch}
           filterRole={filterRole}
           setFilterRole={setFilterRole}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
         />
       )}
     </div>

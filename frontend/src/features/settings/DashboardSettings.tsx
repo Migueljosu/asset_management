@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/Button'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { SettingsCard } from './SettingsCard'
 
 export default function DashboardSettings() {
-  const { toast } = useToast()
-
   // Estado de cada configuração
   const [showAnomaliesChart, setShowAnomaliesChart] = useState(true)
   const [showMaintenanceChart, setShowMaintenanceChart] = useState(true)
@@ -17,10 +15,7 @@ export default function DashboardSettings() {
     // Simular salvamento via API
     // Aqui poderia ser um call para backend
     setTimeout(() => {
-      toast({
-        title: 'Configurações salvas!',
-        description: 'As alterações do dashboard foram registradas com sucesso.',
-      })
+      toast.success('As alterações do dashboard foram registradas com sucesso.')
     }, 300)
   }
 

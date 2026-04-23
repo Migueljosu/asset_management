@@ -7,56 +7,74 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  type CreateUserInput,
 } from '../userService'
+import { useAuth } from '@/context/AuthContext'
+import { toast } from 'sonner'
 
 export function useUsers() {
+  const { token } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState('ALL')
-  const [filterStatus, setFilterStatus] = useState('ALL')
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [token])
 
   const loadUsers = async () => {
+    if (!token) {
+      setUsers([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
-    const data = await getUsers()
-    setUsers(data)
-    setLoading(false)
+
+    try {
+      const data = await getUsers(token)
+      setUsers(data)
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao carregar usuários')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const saveUser = async (data: Omit<User, 'id'> | User) => {
-    if ('id' in data) {
-      const updated = await updateUser(data)
-      setUsers((prev) =>
-        prev.map((u) => (u.id === updated.id ? updated : u))
-      )
-      setEditingUser(null)
-    } else {
-      const created = await createUser(data)
-      setUsers((prev) => [...prev, created])
+    if (!token) return
+
+    try {
+      if ('id' in data) {
+        const updated = await updateUser(token, data)
+        setUsers((prev) =>
+          prev.map((u) => (u.id === updated.id ? updated : u))
+        )
+        setEditingUser(null)
+        toast.success('Usuário atualizado com sucesso')
+      } else {
+        const created = await createUser(token, data as CreateUserInput)
+        setUsers((prev) => [...prev, created])
+        toast.success('Usuário cadastrado com sucesso')
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao salvar usuário')
+      throw error
     }
   }
 
   const removeUser = async (id: number) => {
-    await deleteUser(id)
-    setUsers((prev) => prev.filter((u) => u.id !== id))
-  }
+    if (!token) return
 
-  const toggleBlock = async (user: User) => {
-    const updatedUser = {
-      ...user,
-      status: user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE',
+    try {
+      await deleteUser(token, id)
+      setUsers((prev) => prev.filter((u) => u.id !== id))
+      toast.success('Usuário eliminado com sucesso')
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao eliminar usuário')
     }
-
-    const result = await updateUser(updatedUser)
-
-    setUsers((prev) =>
-      prev.map((u) => (u.id === result.id ? result : u))
-    )
   }
 
   const filteredUsers = users
@@ -68,9 +86,6 @@ export function useUsers() {
     .filter((u) =>
       filterRole === 'ALL' ? true : u.role === filterRole
     )
-    .filter((u) =>
-      filterStatus === 'ALL' ? true : u.status === filterStatus
-    )
 
   return {
     users: filteredUsers,
@@ -79,12 +94,9 @@ export function useUsers() {
     setSearch,
     filterRole,
     setFilterRole,
-    filterStatus,
-    setFilterStatus,
     editingUser,
     setEditingUser,
     saveUser,
     removeUser,
-    toggleBlock,
   }
 }

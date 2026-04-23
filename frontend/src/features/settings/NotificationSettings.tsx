@@ -1,13 +1,10 @@
-import { useAppState, useAppDispatch, showNotification } from '@/context/AppContext'
+import { toast } from 'sonner'
 import { SettingsCard } from './SettingsCard'
 import { Button } from '@/components/ui/Button'
 
 export default function NotificationSettings() {
-  const state = useAppState()
-  const dispatch = useAppDispatch()
-
   const triggerNotification = () => {
-    showNotification(dispatch, 'Essa é uma notificação de teste!', 'info')
+    toast.info('Essa é uma notificação de teste!')
   }
 
   return (

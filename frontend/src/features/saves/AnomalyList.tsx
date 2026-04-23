@@ -35,4 +35,8 @@ export default function AnomalyList() {
       </div>
     </div>
   )
+<<<<<<< ours
 }
+=======
+}
+>>>>>>> theirs

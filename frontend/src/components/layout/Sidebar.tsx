@@ -8,6 +8,9 @@ import {
   Users,
   BarChart3,
   Settings,
+  Building2,
+  ClipboardList,
+  ArrowRightLeft,
 } from 'lucide-react'
 
 import { useAppState } from '@/context/AppContext'
@@ -51,9 +54,16 @@ export default function Sidebar() {
         </NavLink>
 
         {(role === 'admin' || role === 'funcionario') && (
-          <NavLink to="/saves" className={linkClass}>
+          <NavLink to="/loans" className={linkClass}>
             <Calendar size={18} />
-            Reservas
+            Empréstimos
+          </NavLink>
+        )}
+
+        {(role === 'admin' || role === 'funcionario') && (
+          <NavLink to="/schedules" className={linkClass}>
+            <ClipboardList size={18} />
+            Agendamentos
           </NavLink>
         )}
 
@@ -74,6 +84,16 @@ export default function Sidebar() {
             <NavLink to="/users" className={linkClass}>
               <Users size={18} />
               Utilizadores
+            </NavLink>
+
+            <NavLink to="/sectors" className={linkClass}>
+              <Building2 size={18} />
+              Setores
+            </NavLink>
+
+            <NavLink to="/transfers" className={linkClass}>
+              <ArrowRightLeft size={18} />
+              Transferências
             </NavLink>
 
             <NavLink to="/reports" className={linkClass}>

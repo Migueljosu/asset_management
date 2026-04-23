@@ -1,14 +1,21 @@
-export type LoanStatus = 'ACTIVE' | 'OVERDUE' | 'RETURNED'
+export type LoanStatus = 'ACTIVE' | 'RETURNED'
 
 export interface Loan {
-  id: string
+  id: number
   userId: number
   userName: string
-  equipmentId: string
+  equipmentId: number
   equipmentName: string
-  destination: string //  novo
+  sectorId: number
+  sectorName: string
   startDate: string
   dueDate: string
   returnDate?: string
   status: LoanStatus
+}
+
+export interface CreateLoanDTO {
+  equipmentId: number
+  sectorId: number
+  dueDate: string
 }

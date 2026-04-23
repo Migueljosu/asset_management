@@ -10,6 +10,8 @@ const loanRoutes = require("./loanRoutes");
 const maintenanceRoutes = require("./maintenanceRoutes");
 const transferRoutes = require("./transferRoutes");
 const dashboardRoutes = require("./dashboardRoutes")
+const anomalyRoutes = require("./anomalyRoutes");
+const sectorRoutes = require("./sectorRoutes");
 
 // usar rotas
 router.use("/auth", authRoutes);
@@ -20,5 +22,7 @@ router.use("/loans", loanRoutes);
 router.use("/maintenance", maintenanceRoutes);
 router.use("/transfers", transferRoutes);
 router.use("/dashboard", dashboardRoutes)
+router.use("/anomalies", anomalyRoutes);
+router.use("/sectors", sectorRoutes);
 
 module.exports = router;

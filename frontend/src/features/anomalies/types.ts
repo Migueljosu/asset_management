@@ -1,13 +1,17 @@
 export interface Anomaly {
-  id: string
+  id: number
+  equipmentId: number
   title: string
   description: string
+  equipmentName?: string
+  reportedBy?: string
   severity: 'low' | 'medium' | 'high'
   status: 'reported' | 'in_progress' | 'resolved'
   createdAt: string
 }
 
 export interface CreateAnomalyDTO {
+  equipmentId: number
   title: string
   description: string
   severity: 'low' | 'medium' | 'high'
@@ -20,7 +24,6 @@ export interface UpdateAnomalyDTO {
   status?: 'reported' | 'in_progress' | 'resolved'
 }
 
-// Renomeado para evitar conflito com o componente
 export interface AnomalyStatsType {
   total: number
   open: number

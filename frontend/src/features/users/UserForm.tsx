@@ -1,7 +1,7 @@
 //src/feature/users/UserForm.tsx
 
 import { useEffect, useState } from 'react'
-import { User, UserRole, UserStatus } from './types'
+import { User, UserRole } from './types'
 
 type Props = {
   onSubmit: (data: Omit<User, 'id'> | User) => void
@@ -13,8 +13,7 @@ export default function UserForm({ onSubmit, editingUser }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [role, setRole] = useState<UserRole>('EMPLOYEE')
-  const [status, setStatus] = useState<UserStatus>('ACTIVE')
+  const [role, setRole] = useState<UserRole>('funcionario')
 
   const [errors, setErrors] = useState<{
     name?: string
@@ -30,7 +29,6 @@ export default function UserForm({ onSubmit, editingUser }: Props) {
       setName(editingUser.name)
       setEmail(editingUser.email)
       setRole(editingUser.role)
-      setStatus(editingUser.status)
       // NÃO preenchemos senha ao editar
       setPassword('')
       setConfirmPassword('')
@@ -44,8 +42,7 @@ export default function UserForm({ onSubmit, editingUser }: Props) {
     setEmail('')
     setPassword('')
     setConfirmPassword('')
-    setRole('EMPLOYEE')
-    setStatus('ACTIVE')
+    setRole('funcionario')
     setErrors({})
   }
 
@@ -84,10 +81,9 @@ export default function UserForm({ onSubmit, editingUser }: Props) {
             name,
             email,
             role,
-            status,
             ...(password ? { password } : {}), // só envia senha se preenchida
           }
-        : { name, email, role, status, password }
+        : { name, email, role, password }
 
       await onSubmit(userData)
       resetForm()
@@ -157,16 +153,9 @@ export default function UserForm({ onSubmit, editingUser }: Props) {
 
         {/* Role */}
         <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="border rounded px-3 py-2">
-          <option value="ADMIN">Admin</option>
-          <option value="MANAGER">Gestore</option>
-          <option value="TECHNICIAN">Técnico de Manutenção</option>
-          <option value="EMPLOYEE">Funcionário</option>
-        </select>
-
-        {/* Status */}
-        <select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)} className="border rounded px-3 py-2">
-          <option value="ACTIVE">Ativo</option>
-          <option value="BLOCKED">Bloqueado</option>
+          <option value="admin">Admin</option>
+          <option value="tecnico">Técnico</option>
+          <option value="funcionario">Funcionário</option>
         </select>
       </div>
 

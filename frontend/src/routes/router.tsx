@@ -18,6 +18,9 @@ import UsersPage from '@/features/users/UsersPage'
 import LoansPage from '@/features/saves/LoansPage'
 import AnomalyPage from '@/features/anomalies/AnomalyPage'
 import MaintenancePage from '@/features/manutention/MaintenancePage'
+import SectorsPage from '@/features/sectors/SectorsPage'
+import SchedulesPage from '@/features/schedules/SchedulesPage'
+import TransfersPage from '@/features/transfers/TransfersPage'
 
 // Lazy
 const Login = lazy(() => import('../pages/Login'))
@@ -66,6 +69,16 @@ export const router = createBrowserRouter([
         element: <RoleRoute allowed={['admin']}>{withSuspense(<UsersPage />)}</RoleRoute>,
       },
 
+      {
+        path: 'sectors',
+        element: <RoleRoute allowed={['admin']}>{withSuspense(<SectorsPage />)}</RoleRoute>,
+      },
+
+      {
+        path: 'transfers',
+        element: <RoleRoute allowed={['admin']}>{withSuspense(<TransfersPage />)}</RoleRoute>,
+      },
+
       // ⚙️ settings (admin)
       {
         path: 'settings',
@@ -73,7 +86,16 @@ export const router = createBrowserRouter([
       },
 
       // 💰 loans
-      { path: 'saves', element: withSuspense(<LoansPage />) },
+      { path: 'loans', element: withSuspense(<LoansPage />) },
+
+      {
+        path: 'schedules',
+        element: (
+          <RoleRoute allowed={['admin', 'funcionario']}>
+            {withSuspense(<SchedulesPage />)}
+          </RoleRoute>
+        ),
+      },
 
       // 🖥️ equipment
       { path: 'equipments', element: withSuspense(<EquipmentList />) },

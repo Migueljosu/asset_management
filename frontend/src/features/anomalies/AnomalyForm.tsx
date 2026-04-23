@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { equipmentService } from '../equipment/equipmentService'
-import { anomalyService } from './anomalyService'
+import { CreateAnomalyDTO, Anomaly } from './types'
 import { Equipment } from '../equipment/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
@@ -11,54 +11,84 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { useAppDispatch, useAppState, showNotification } from '@/context/AppContext'
-import { fakeUser } from '@/utils/fakeAuth'
+import { useAppState } from '@/context/AppContext'
+import { toast } from 'sonner'
+import { useAuth } from '@/context/AuthContext'
 
 interface Props {
+  onSubmit: (data: CreateAnomalyDTO) => Promise<void>
   onSuccess?: () => void
+  initialData?: Anomaly | null
+  onCancelEdit?: () => void
+  loading?: boolean
 }
 
-export default function AnomalyForm({ onSuccess }: Props) {
+export default function AnomalyForm({
+  onSubmit,
+  onSuccess,
+  initialData,
+  onCancelEdit,
+  loading = false,
+}: Props) {
   const [equipments, setEquipments] = useState<Equipment[]>([])
   const [equipmentId, setEquipmentId] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('low')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { theme } = useAppState()
-  const dispatch = useAppDispatch()
+  const { token } = useAuth()
 
   useEffect(() => {
-   // equipmentService.getAll().then(setEquipments)
-  }, [])
+    loadEquipments()
+  }, [token])
+
+  useEffect(() => {
+    if (initialData) {
+      setEquipmentId(String(initialData.equipmentId))
+      setTitle(initialData.title)
+      setDescription(initialData.description)
+      setSeverity(initialData.severity)
+    } else {
+      resetForm()
+    }
+  }, [initialData])
+
+  async function loadEquipments() {
+    if (!token) return
+
+    try {
+      const data = await equipmentService.getAll(token)
+      setEquipments(data)
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao carregar equipamentos')
+    }
+  }
+
+  function resetForm() {
+    setEquipmentId('')
+    setTitle('')
+    setDescription('')
+    setSeverity('low')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
     if (!equipmentId || !title.trim() || !description.trim()) {
-      showNotification(dispatch, 'Preencha todos os campos', 'destructive')
+      toast.error('Preencha todos os campos')
       return
     }
-    try {
-      setIsSubmitting(true)
-      await anomalyService.create({
-        //equipmentId,
-        title: title.trim(),
-        description: description.trim(),
-        severity,
-        reportedBy: fakeUser.name,
-      })
-      showNotification(dispatch, 'Anomalia registrada com sucesso', 'success')
-      setTitle('')
-      setDescription('')
-      setEquipmentId('')
-      setSeverity('low')
-      onSuccess?.()
-    } catch {
-      showNotification(dispatch, 'Não foi possível registrar a anomalia', 'destructive')
-    } finally {
-      setIsSubmitting(false)
-    }
+
+    await onSubmit({
+      equipmentId: Number(equipmentId),
+      title: title.trim(),
+      description: description.trim(),
+      severity,
+    })
+
+    resetForm()
+    onSuccess?.()
   }
 
   return (
@@ -67,18 +97,24 @@ export default function AnomalyForm({ onSuccess }: Props) {
       className={`p-6 rounded-xl shadow-lg space-y-6 ${theme === 'dark' ? 'bg-zinc-800 text-zinc-100' : 'bg-white text-zinc-900'}`}
     >
       <div>
-        <h2 className="text-xl font-bold">REGISTRAR ANOMALIA</h2>
+        <h2 className="text-xl font-bold">
+          {initialData ? 'EDITAR ANOMALIA' : 'REGISTRAR ANOMALIA'}
+        </h2>
         <p className="text-sm text-zinc-400">Relatar falha operacional do equipamento</p>
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="equipment" className="text-sm">Equipamento</label>
-        <Select id="equipment" onValueChange={setEquipmentId} value={equipmentId}>
+        <label className="text-sm">Equipamento</label>
+        <Select onValueChange={setEquipmentId} value={equipmentId}>
           <SelectTrigger className="bg-zinc-200 text-zinc-900 border border-zinc-400">
             <SelectValue placeholder="Selecione o equipamento" />
           </SelectTrigger>
           <SelectContent>
-            {equipments.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+            {equipments.map((equipment) => (
+              <SelectItem key={equipment.id} value={String(equipment.id)}>
+                {equipment.nome}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -104,22 +140,32 @@ export default function AnomalyForm({ onSuccess }: Props) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="severity" className="text-sm">Severidade</label>
-        <Select id="severity" onValueChange={(value: 'low'|'medium'|'high') => setSeverity(value)} value={severity}>
+        <label className="text-sm">Severidade</label>
+        <Select
+          onValueChange={(value) => setSeverity(value as 'low' | 'medium' | 'high')}
+          value={severity}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Selecione a severidade" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="low">🟢 Baixa</SelectItem>
-            <SelectItem value="medium">🟡 Média</SelectItem>
-            <SelectItem value="high">🔴 Alta</SelectItem>
+            <SelectItem value="low">Baixa</SelectItem>
+            <SelectItem value="medium">Media</SelectItem>
+            <SelectItem value="high">Alta</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Registrando...' : 'Registrar Falha'}
-      </Button>
+      <div className="flex gap-3">
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Salvando...' : initialData ? 'Atualizar Falha' : 'Registrar Falha'}
+        </Button>
+        {initialData && onCancelEdit && (
+          <Button type="button" onClick={onCancelEdit}>
+            Cancelar
+          </Button>
+        )}
+      </div>
     </form>
   )
 }

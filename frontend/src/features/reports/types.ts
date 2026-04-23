@@ -14,7 +14,6 @@ export interface SeverityStats {
 
 export interface StatusStats {
   reported: number
-  under_review: number
-  in_maintenance: number
+  in_progress: number
   resolved: number
 }

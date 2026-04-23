@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!res.ok) {
         dispatch({ type: 'SET_LOADING', payload: false })
-        return { success: false, error: data.message }
+        return { success: false, error: data.error || data.message || 'Falha no login' }
       }
 
       const token = data.data.token
@@ -117,7 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const data = await res.json()
 
-        const user = normalizeUser(data.data.user)
+        if (!res.ok || !data?.data) {
+          throw new Error(data?.error || 'Sessão inválida')
+        }
+
+        const user = normalizeUser(data.data)
 
         localStorage.setItem('user', JSON.stringify(user))
 

@@ -1,23 +1,21 @@
-export type MaintenanceStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'completed'
+export type MaintenanceStatus = 'in_progress' | 'completed'
 
 export interface Maintenance {
-  id: string
-  equipmentId: string
-  anomalyId?: string
+  id: number
+  equipmentId: number
+  equipmentName: string
   description: string
+  type: string
   status: MaintenanceStatus
   startDate: string
   endDate?: string
-  technician: string
+  technicianId: number
+  technicianName: string
   createdAt: string
 }
 
 export interface CreateMaintenanceDTO {
-  equipmentId: string
-  anomalyId?: string
+  equipmentId: number
   description: string
-  technician: string
+  type: string
 }

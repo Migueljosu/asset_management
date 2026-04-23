@@ -1,49 +1,37 @@
 //src/feature/users/UserList.tsx
 
 import { User } from './types'
+import { toast } from 'sonner'
 
 type Props = {
   users: User[]
   onEdit: (user: User) => void
   onDelete: (id: number) => void
-  onBlock: (user: User) => void
   search: string
   setSearch: (value: string) => void
   filterRole: string
   setFilterRole: (value: string) => void
-  filterStatus: string
-  setFilterStatus: (value: string) => void
 }
 
 export default function UserList({
   users,
   onEdit,
   onDelete,
-  onBlock,
   search,
   setSearch,
   filterRole,
   setFilterRole,
-  filterStatus,
-  setFilterStatus,
 }: Props) {
   const roleColor = (role: string) => {
     switch (role) {
-      case 'ADMIN':
+      case 'admin':
         return 'bg-red-100 text-red-700'
-      case 'MANAGER':
-        return 'bg-purple-100 text-purple-700'
-      case 'TECHNICIAN':
+      case 'tecnico':
         return 'bg-yellow-100 text-yellow-700'
       default:
         return 'bg-blue-100 text-blue-700'
     }
   }
-
-  const statusColor = (status: string) =>
-    status === 'ACTIVE'
-      ? 'bg-green-100 text-green-700'
-      : 'bg-gray-200 text-gray-700'
 
   return (
     <div className="bg-card p-6 rounded-lg border border-border shadow-sm space-y-6">
@@ -67,21 +55,9 @@ export default function UserList({
           className="border rounded px-3 py-2"
         >
           <option value="ALL">Todos</option>
-          <option value="ADMIN">Admin</option>
-          <option value="MANAGER">Manager</option>
-          <option value="TECHNICIAN">Técnico</option>
-          <option value="EMPLOYEE">Funcionário</option>
-        </select>
-
-        {/* 🆕 Filtro por Status */}
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="ALL">Todos Status</option>
-          <option value="ACTIVE">Ativo</option>
-          <option value="BLOCKED">Bloqueado</option>
+          <option value="admin">Admin</option>
+          <option value="tecnico">Técnico</option>
+          <option value="funcionario">Funcionário</option>
         </select>
       </div>
 
@@ -111,14 +87,6 @@ export default function UserList({
                   >
                     {user.role}
                   </span>
-
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${statusColor(
-                      user.status
-                    )}`}
-                  >
-                    {user.status}
-                  </span>
                 </div>
               </div>
 
@@ -132,24 +100,21 @@ export default function UserList({
                 </button>
 
                 <button
-                  onClick={() => onBlock(user)}
-                  className="text-yellow-600 hover:text-yellow-800 text-sm font-medium transition"
-                >
-                  {user.status === 'ACTIVE'
-                    ? 'Bloquear'
-                    : 'Desbloquear'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (
-                      confirm(
-                        'Tens certeza que quer eliminar este usuário?'
-                      )
-                    ) {
-                      onDelete(user.id)
-                    }
-                  }}
+                  onClick={() =>
+                    toast('Confirmar eliminação?', {
+                      description: `O usuário ${user.name} será removido.`,
+                      action: {
+                        label: 'Confirmar',
+                        onClick: () => onDelete(user.id),
+                      },
+                      cancel: {
+                        label: 'Cancelar',
+                        onClick: () => {
+                          toast('Ação cancelada')
+                        },
+                      },
+                    })
+                  }
                   className="text-red-600 hover:text-red-800 text-sm font-medium transition"
                 >
                   Eliminar

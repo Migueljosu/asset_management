@@ -88,6 +88,16 @@ const finishMaintenance = async (req, res) => {
         data: { estado: "disponivel" },
       });
 
+      await tx.anomaly.updateMany({
+        where: {
+          equipmentId: maintenance.equipmentId,
+          estado: { not: "resolvida" },
+        },
+        data: {
+          estado: "resolvida",
+        },
+      });
+
       await tx.log.create({
         data: {
           userId: req.user.id,

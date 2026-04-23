@@ -6,7 +6,7 @@ function getRoleFromToken(token: string | null) {
 
   try {
     const payload = JSON.parse(atob(token.split(".")[1]))
-    return payload.role
+    return payload.perfil
   } catch {
     return null
   }
@@ -25,7 +25,7 @@ export default function RoleRedirect() {
     return <Navigate to="/dashboard" replace />
   }
 
-  if (role === "technician") {
+  if (role === "tecnico" || role === "funcionario") {
     return <Navigate to="/dashboardPessoal" replace />
   }
 

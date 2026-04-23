@@ -1,35 +1,55 @@
 const prisma = require("../utils/prisma");
 
 const createTransfer = async (req, res) => {
-  const { equipmentId, setorOrigemId, setorDestinoId } = req.body;
+  const { equipmentId, setorDestinoId } = req.body;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
       const equipment = await tx.equipment.findUnique({
-        where: { id: equipmentId },
+        where: { id: Number(equipmentId) },
       });
 
       if (!equipment) {
         throw new Error("Equipamento não encontrado");
       }
 
-      if (equipment.estado === "em_uso") {
-        throw new Error("Equipamento está em uso");
+      if (equipment.estado !== "em_uso") {
+        throw new Error("Apenas equipamentos em uso podem ser transferidos");
       }
 
-      if (equipment.estado === "manutencao") {
-        throw new Error("Equipamento em manutenção");
+      const activeLoan = await tx.loan.findFirst({
+        where: {
+          equipmentId: Number(equipmentId),
+          estado: "ativo",
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (!activeLoan) {
+        throw new Error("Não existe empréstimo ativo para este equipamento");
       }
 
-      if (setorOrigemId === setorDestinoId) {
+      if (activeLoan.setorDestinoId === Number(setorDestinoId)) {
         throw new Error("Origem e destino iguais");
       }
 
       const transfer = await tx.transfer.create({
         data: {
-          equipmentId,
-          setorOrigemId,
-          setorDestinoId,
+          equipmentId: Number(equipmentId),
+          setorOrigemId: activeLoan.setorDestinoId,
+          setorDestinoId: Number(setorDestinoId),
+        },
+        include: {
+          equipment: true,
+          setorOrigem: true,
+          setorDestino: true,
+        },
+      });
+
+      await tx.loan.update({
+        where: { id: activeLoan.id },
+        data: {
+          setorDestinoId: Number(setorDestinoId),
         },
       });
 
@@ -45,7 +65,7 @@ const createTransfer = async (req, res) => {
       return transfer;
     });
 
-    res.json({
+    res.status(201).json({
       success: true,
       data: result,
     });
@@ -137,9 +157,46 @@ const getTransfersByEquipment = async (req, res) => {
   }
 };
 
+const getTransferableEquipments = async (req, res) => {
+  try {
+    const activeLoans = await prisma.loan.findMany({
+      where: {
+        estado: "ativo",
+        equipment: {
+          estado: "em_uso",
+        },
+      },
+      include: {
+        equipment: true,
+        setorDestino: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const items = activeLoans.map((loan) => ({
+      equipmentId: loan.equipmentId,
+      equipmentName: loan.equipment.nome,
+      currentSectorId: loan.setorDestinoId,
+      currentSectorName: loan.setorDestino.nome,
+      loanId: loan.id,
+    }));
+
+    res.json({
+      success: true,
+      data: items,
+    });
+  } catch {
+    res.status(500).json({
+      success: false,
+      error: "Erro interno",
+    });
+  }
+};
+
 module.exports = {
   createTransfer,
   getAllTransfers,
   getTransferById,
   getTransfersByEquipment,
+  getTransferableEquipments,
 };

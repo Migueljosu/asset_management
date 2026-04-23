@@ -4,18 +4,21 @@ import { getLoans, returnLoan, deleteLoan } from './loanService'
 import LoanForm from './LoanForm'
 import LoanList from './LoanList'
 import BackToHome from '@/components/ui/BackToHome'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
+import { useAuth } from '@/context/AuthContext'
 
 export default function LoansPage() {
   const [loans, setLoans] = useState<Loan[]>([])
-  const { toast } = useToast()
+  const { token } = useAuth()
 
   useEffect(() => {
     loadLoans()
-  }, [])
+  }, [token])
 
   async function loadLoans() {
-    const data = await getLoans()
+    if (!token) return
+
+    const data = await getLoans(token)
     setLoans(data)
   }
 
@@ -23,43 +26,27 @@ export default function LoansPage() {
     setLoans((prev) => [...prev, loan])
   }
 
-  const handleReturn = async (id: string) => {
+  const handleReturn = async (id: number) => {
+    if (!token) return
+
     try {
-      const updated = await returnLoan(id)
-
-      setLoans((prev) =>
-        prev.map((l) => (l.id === id ? updated : l))
-      )
-
-      toast({
-        title: 'Sucesso',
-        description: 'Equipamento devolvido',
-      })
+      await returnLoan(token, id)
+      toast.success('Equipamento devolvido')
+      await loadLoans()
     } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: err.message,
-      })
+      toast.error(err.message)
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
+    if (!token) return
+
     try {
-      await deleteLoan(id)
-
-      setLoans((prev) => prev.filter((l) => l.id !== id))
-
-      toast({
-        title: 'Removido',
-        description: 'Empréstimo excluído',
-      })
+      await deleteLoan(token, id)
+      toast.success('Empréstimo excluído')
+      await loadLoans()
     } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: err.message,
-      })
+      toast.error(err.message)
     }
   }
 

@@ -40,6 +40,18 @@ enum EstadoMaintenance {
   concluida
 }
 
+enum EstadoAnomaly {
+  reportada
+  em_analise
+  resolvida
+}
+
+enum SeveridadeAnomaly {
+  baixa
+  media
+  alta
+}
+
 model User {
   id        Int     @id @default(autoincrement())
   nome      String
@@ -51,6 +63,7 @@ model User {
   schedules   Schedule[]
   loans       Loan[]
   maintenances Maintenance[] @relation("TecnicoMaintenance")
+  anomalies   Anomaly[]
   logs        Log[]
   resetToken       String?
   resetTokenExp    DateTime?
@@ -78,6 +91,7 @@ model Equipment {
   schedules   Schedule[]
   loans       Loan[]
   maintenances Maintenance[]
+  anomalies    Anomaly[]
   transfers    Transfer[]
 }
 
@@ -156,4 +170,18 @@ model Log {
   user User @relation(fields: [userId], references: [id])
   equipment Equipment? @relation(fields: [equipmentId], references: [id])
 
+}
+
+model Anomaly {
+  id          Int               @id @default(autoincrement())
+  userId      Int
+  equipmentId Int
+  titulo      String
+  descricao   String
+  estado      EstadoAnomaly     @default(reportada)
+  severidade  SeveridadeAnomaly
+  createdAt   DateTime          @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
 }

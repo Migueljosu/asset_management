@@ -4,6 +4,7 @@ const auth = require("../middlewares/authMiddleware");
 const role = require("../middlewares/roleMiddleware");
 
 const {
+  createUser,
   getAllUsers,
   getUserById,
   updateUser,
@@ -38,6 +39,7 @@ const {
 router.get("/me", auth, getProfile);
 
 // admin
+router.post("/", auth, role("admin"), createUser);
 /**
  * @swagger
  * /users:

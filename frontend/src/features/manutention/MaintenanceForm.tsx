@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { equipmentService } from '../equipment/equipmentService'
 import { maintenanceService } from './maintenanceService'
 import { Equipment } from '../equipment/types'
@@ -11,8 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { useToast } from '@/hooks/use-toast'
-import { fakeUser } from '@/utils/fakeAuth'
+import { toast } from 'sonner'
+import { useAuth } from '@/context/AuthContext'
+import { fetchAnomalies } from '../anomalies/anomalyService'
+import { Anomaly } from '../anomalies/types'
 
 interface Props {
   onSuccess?: () => void
@@ -20,77 +22,78 @@ interface Props {
 
 export default function MaintenanceForm({ onSuccess }: Props) {
   const [equipments, setEquipments] = useState<Equipment[]>([])
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([])
   const [equipmentId, setEquipmentId] = useState('')
   const [description, setDescription] = useState('')
-  const [technician, setTechnician] = useState('')
+  const [type, setType] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { toast } = useToast()
+  const { token } = useAuth()
 
   useEffect(() => {
-    loadEquipments()
-  }, [])
+    loadData()
+  }, [token])
 
-  async function loadEquipments() {
-    const data = await equipmentService.getAll()
+  async function loadData() {
+    if (!token) return
 
-    // Apenas equipamentos ativos podem entrar em manutenção
-    const activeEquipments = data.filter(
-      (e) => e.status === 'active'
-    )
+    try {
+      const [equipmentData, anomalyData] = await Promise.all([
+        equipmentService.getAll(token),
+        fetchAnomalies(token),
+      ])
 
-    setEquipments(activeEquipments)
+      const availableEquipments = equipmentData.filter(
+        (equipment) => equipment.estado !== 'em_uso' && equipment.estado !== 'manutencao'
+      )
+
+      setEquipments(availableEquipments)
+      setAnomalies(anomalyData)
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao carregar dados de manutenção')
+    }
   }
+
+  const anomalyCountByEquipment = useMemo(() => {
+    return anomalies.reduce<Record<number, number>>((acc, anomaly) => {
+      if (anomaly.status === 'resolved') return acc
+      acc[anomaly.equipmentId] = (acc[anomaly.equipmentId] || 0) + 1
+      return acc
+    }, {})
+  }, [anomalies])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!equipmentId || !description || !technician) {
-      toast({
-        title: 'Erro',
-        description: 'Preencha todos os campos.',
-        variant: 'destructive',
-      })
+    if (!equipmentId || !description.trim() || !type.trim()) {
+      toast.error('Preencha todos os campos.')
       return
     }
+
+    if (!token) return
 
     try {
       setLoading(true)
 
-      await maintenanceService.create({
-        equipmentId,
-        description,
-        technician,
-      })
+      await maintenanceService.create(
+        {
+          equipmentId: Number(equipmentId),
+          description: description.trim(),
+          type: type.trim(),
+        },
+        token
+      )
 
-      toast({
-        title: 'Sucesso',
-        description: 'Manutenção criada com sucesso.',
-      })
-
+      toast.success('Manutenção criada com sucesso.')
       setEquipmentId('')
       setDescription('')
-      setTechnician('')
-
+      setType('')
       onSuccess?.()
-    } catch (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao criar manutenção.',
-        variant: 'destructive',
-      })
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao criar manutenção.')
     } finally {
       setLoading(false)
     }
-  }
-
-  // 🔐 Apenas admin pode criar manutenção
-  if (fakeUser.role !== 'admin') {
-    return (
-      <div className="text-red-500 font-medium">
-        Apenas administradores podem criar manutenções.
-      </div>
-    )
   }
 
   return (
@@ -98,51 +101,48 @@ export default function MaintenanceForm({ onSuccess }: Props) {
       onSubmit={handleSubmit}
       className="bg-card p-6 rounded-lg border border-border shadow-sm space-y-4"
     >
-      <h2 className="text-xl font-semibold">
-        Criar Nova Manutenção
-      </h2>
+      <h2 className="text-xl font-semibold">Criar Nova Manutenção</h2>
 
-      {/* Equipamento */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Equipamento
-        </label>
+        <label className="text-sm font-medium">Equipamento</label>
 
         <Select onValueChange={setEquipmentId} value={equipmentId}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione um equipamento" />
           </SelectTrigger>
           <SelectContent>
-            {equipments.map((equipment) => (
-              <SelectItem key={equipment.id} value={equipment.id}>
-                {equipment.name}
-              </SelectItem>
-            ))}
+            {equipments.map((equipment) => {
+              const activeAnomalies = anomalyCountByEquipment[equipment.id] || 0
+              const label =
+                activeAnomalies > 0
+                  ? `${equipment.nome} (${activeAnomalies} anomalia(s) aberta(s))`
+                  : equipment.nome
+
+              return (
+                <SelectItem key={equipment.id} value={String(equipment.id)}>
+                  {label}
+                </SelectItem>
+              )
+            })}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Descrição */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Descrição
-        </label>
+        <label className="text-sm font-medium">Tipo</label>
+        <Input
+          placeholder="Ex: Preventiva, Corretiva"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Descrição</label>
         <Input
           placeholder="Descreva o problema..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
-
-      {/* Técnico */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Técnico Responsável
-        </label>
-        <Input
-          placeholder="Nome do técnico"
-          value={technician}
-          onChange={(e) => setTechnician(e.target.value)}
         />
       </div>
 

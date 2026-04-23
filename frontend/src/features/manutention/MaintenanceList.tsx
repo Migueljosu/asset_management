@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { maintenanceService } from './maintenanceService'
-import { equipmentService } from '../equipment/equipmentService'
 import { Maintenance } from './types'
-import { Equipment } from '../equipment/types'
+import { toast } from 'sonner'
+import { useAuth } from '@/context/AuthContext'
+import { fetchAnomalies } from '../anomalies/anomalyService'
+import { Anomaly } from '../anomalies/types'
 import { Button } from '@/components/ui/Button'
-import { fakeUser } from '@/utils/fakeAuth'
 
 interface Props {
   refreshKey?: number
@@ -12,128 +13,121 @@ interface Props {
 
 export default function MaintenanceList({ refreshKey }: Props) {
   const [maintenances, setMaintenances] = useState<Maintenance[]>([])
-  const [equipments, setEquipments] = useState<Equipment[]>([])
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([])
   const [loading, setLoading] = useState(true)
+  const { token, user } = useAuth()
 
   useEffect(() => {
     loadData()
-  }, [refreshKey])
+  }, [refreshKey, token])
 
   async function loadData() {
+    if (!token) return
+
     setLoading(true)
 
-    const maintenanceData = await maintenanceService.getAll()
-    const equipmentData = await equipmentService.getAll()
+    try {
+      const [maintenanceData, anomalyData] = await Promise.all([
+        maintenanceService.getAll(token),
+        fetchAnomalies(token),
+      ])
 
-    setMaintenances(maintenanceData)
-    setEquipments(equipmentData)
-    setLoading(false)
+      setMaintenances(maintenanceData)
+      setAnomalies(anomalyData)
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao carregar manutenções')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function getEquipmentName(id: string) {
-    const equipment = equipments.find((e) => e.id === id)
-    return equipment ? equipment.name : 'Desconhecido'
+  const anomalyCountByEquipment = useMemo(() => {
+    return anomalies.reduce<Record<number, number>>((acc, anomaly) => {
+      if (anomaly.status === 'resolved') return acc
+      acc[anomaly.equipmentId] = (acc[anomaly.equipmentId] || 0) + 1
+      return acc
+    }, {})
+  }, [anomalies])
+
+  async function handleFinish(id: number) {
+    if (!token) return
+
+    try {
+      await maintenanceService.finish(id, token)
+      toast.success('Manutenção concluída com sucesso')
+      await loadData()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao concluir manutenção')
+    }
   }
 
-  async function handleUpdateStatus(
-    id: string,
-    status: Maintenance['status']
-  ) {
-    await maintenanceService.updateStatus(id, status)
-    loadData()
+  async function handleCancel(id: number) {
+    if (!token) return
+
+    try {
+      await maintenanceService.cancel(id, token)
+      toast.success('Manutenção cancelada com sucesso')
+      await loadData()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cancelar manutenção')
+    }
   }
 
   if (loading) {
     return <div>Carregando manutenções...</div>
   }
 
+  const canManageMaintenance = user?.role === 'admin' || user?.role === 'tecnico'
+
   return (
     <div className="space-y-4">
       {maintenances.length === 0 && (
-        <div className="text-gray-500">
-          Nenhuma manutenção registrada.
-        </div>
+        <div className="text-gray-500">Nenhuma manutenção registrada.</div>
       )}
 
-      {maintenances.map((maintenance) => (
-        <div
-          key={maintenance.id}
-          className="bg-white p-5 rounded-2xl shadow-md space-y-3"
-        >
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">
-              {getEquipmentName(maintenance.equipmentId)}
-            </h3>
+      {maintenances.map((maintenance) => {
+        const activeAnomalies = anomalyCountByEquipment[maintenance.equipmentId] || 0
 
-            <span
-              className={`text-sm font-medium px-3 py-1 rounded-full ${
-                maintenance.status === 'pending'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : maintenance.status === 'in_progress'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'
-              }`}
-            >
-              {maintenance.status}
-            </span>
+        return (
+          <div
+            key={maintenance.id}
+            className="bg-white p-5 rounded-2xl shadow-md space-y-3"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-lg">{maintenance.equipmentName}</h3>
+                {activeAnomalies > 0 && (
+                  <p className="text-xs text-amber-600">
+                    Este equipamento tem {activeAnomalies} anomalia(s) aberta(s)
+                  </p>
+                )}
+              </div>
+
+              <span
+                className={`text-sm font-medium px-3 py-1 rounded-full ${
+                  maintenance.status === 'in_progress'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-green-100 text-green-700'
+                }`}
+              >
+                {maintenance.status}
+              </span>
+            </div>
+
+            <p className="text-gray-600">{maintenance.description}</p>
+
+            <div className="text-sm text-gray-500">Tipo: {maintenance.type}</div>
+            <div className="text-sm text-gray-500">Técnico: {maintenance.technicianName}</div>
+
+            {canManageMaintenance && maintenance.status === 'in_progress' && (
+              <div className="flex gap-3">
+                <Button onClick={() => handleFinish(maintenance.id)}>Concluir</Button>
+                <Button onClick={() => handleCancel(maintenance.id)}>Cancelar</Button>
+              </div>
+            )}
           </div>
-
-          <p className="text-gray-600">
-            {maintenance.description}
-          </p>
-
-          <div className="text-sm text-gray-500">
-            Técnico: {maintenance.technician}
-          </div>
-
-          <div className="flex gap-3">
-            {/* Técnico pode iniciar */}
-            {fakeUser.role === 'technician' &&
-              maintenance.status === 'pending' && (
-                <Button
-                  onClick={() =>
-                    handleUpdateStatus(
-                      maintenance.id,
-                      'in_progress'
-                    )
-                  }
-                >
-                  Iniciar
-                </Button>
-              )}
-
-            {/* Técnico pode concluir */}
-            {fakeUser.role === 'technician' &&
-              maintenance.status === 'in_progress' && (
-                <Button
-                  onClick={() =>
-                    handleUpdateStatus(
-                      maintenance.id,
-                      'completed'
-                    )
-                  }
-                >
-                  Concluir
-                </Button>
-              )}
-
-            {/* Admin pode alterar qualquer status */}
-            {fakeUser.role === 'admin' &&
-              maintenance.status !== 'completed' && (
-                <Button
-                  onClick={() =>
-                    handleUpdateStatus(
-                      maintenance.id,
-                      'completed'
-                    )
-                  }
-                >
-                  Marcar como Concluída
-                </Button>
-              )}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

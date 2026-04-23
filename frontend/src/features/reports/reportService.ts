@@ -1,11 +1,8 @@
 import { anomalyService } from '../anomalies/anomalyService'
-import { equipmentService } from '../equipment/equipmentService'
 
 async function getBaseData() {
-  const [anomalies, equipments] = await Promise.all([
-    anomalyService.getAll(),
-    //equipmentService.getAll()
-  ])
+  const anomalies = await anomalyService.getAll()
+  const equipments: any[] = []
 
   return { anomalies, equipments }
 }
@@ -16,10 +13,10 @@ export const reportService = {
     const { anomalies, equipments } = await getBaseData()
 
     return {
-      //totalEquipments: equipments.length,
+      totalEquipments: equipments.length,
       totalAnomalies: anomalies.length,
       resolvedAnomalies: anomalies.filter(a => a.status === 'resolved').length,
-      maintenanceAnomalies: anomalies.filter(a => a.status === 'in_maintenance').length,
+      maintenanceAnomalies: anomalies.filter(a => a.status === 'in_progress').length,
       borrowedEquipments: 0
     }
   },
@@ -39,8 +36,7 @@ export const reportService = {
 
     return {
       reported: anomalies.filter(a => a.status === 'reported').length,
-      under_review: anomalies.filter(a => a.status === 'under_review').length,
-      in_maintenance: anomalies.filter(a => a.status === 'in_maintenance').length,
+      in_progress: anomalies.filter(a => a.status === 'in_progress').length,
       resolved: anomalies.filter(a => a.status === 'resolved').length
     }
   }

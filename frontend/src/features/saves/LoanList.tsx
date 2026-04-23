@@ -4,18 +4,17 @@ import { Button } from '@/components/ui/Button'
 
 interface Props {
   loans: Loan[]
-  onReturn: (id: string) => void
-  onDelete: (id: string) => void
+  onReturn: (id: number) => void
+  onDelete: (id: number) => void
 }
 
 export default function LoanList({ loans, onReturn, onDelete }: Props) {
-
   const [search, setSearch] = useState('')
 
   const filtered = loans.filter((l) =>
     l.equipmentName.toLowerCase().includes(search.toLowerCase()) ||
     l.userName.toLowerCase().includes(search.toLowerCase()) ||
-    l.destination.toLowerCase().includes(search.toLowerCase()) ||
+    l.sectorName.toLowerCase().includes(search.toLowerCase()) ||
     l.status.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -39,7 +38,7 @@ export default function LoanList({ loans, onReturn, onDelete }: Props) {
             </p>
 
             <p className="text-sm text-muted-foreground">
-              Destino: {loan.destination}
+              Setor: {loan.sectorName}
             </p>
 
             <p className={
@@ -61,16 +60,18 @@ export default function LoanList({ loans, onReturn, onDelete }: Props) {
               </Button>
             )}
 
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (confirm('Tem certeza?')) {
-                  onDelete(loan.id)
-                }
-              }}
-            >
-              Excluir
-            </Button>
+            {loan.status === 'RETURNED' && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (confirm('Tem certeza?')) {
+                    onDelete(loan.id)
+                  }
+                }}
+              >
+                Excluir
+              </Button>
+            )}
 
           </div>
 

@@ -15,8 +15,7 @@ interface Props {
 
 const COLORS = [
   '#3b82f6', // reported
-  '#f59e0b', // under_review
-  '#a855f7', // in_maintenance
+  '#f59e0b', // in_progress
   '#22c55e'  // resolved
 ]
 
@@ -35,8 +34,7 @@ export default function MaintenanceChart({ data }: Props) {
 
   const chartData = [
     { name: 'Reportadas', value: data.reported },
-    { name: 'Em revisão', value: data.under_review },
-    { name: 'Em manutenção', value: data.in_maintenance },
+    { name: 'Em analise', value: data.in_progress },
     { name: 'Resolvidas', value: data.resolved },
   ]
 
@@ -56,7 +54,7 @@ export default function MaintenanceChart({ data }: Props) {
             nameKey="name"
             outerRadius={100}
           >
-            {chartData.map((entry, index) => (
+            {chartData.map((_, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS[index % COLORS.length]}

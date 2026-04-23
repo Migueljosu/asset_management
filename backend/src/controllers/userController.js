@@ -1,4 +1,63 @@
 const prisma = require("../utils/prisma");
+const bcrypt = require("bcrypt");
+
+const createUser = async (req, res) => {
+  const { nome, email, senha, perfil } = req.body;
+
+  try {
+    if (!nome || !email || !senha || !perfil) {
+      return res.status(400).json({
+        success: false,
+        error: "nome, email, senha e perfil são obrigatórios",
+      });
+    }
+
+    const exists = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        error: "Email já registrado",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(senha, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        nome,
+        email,
+        senha: hashedPassword,
+        perfil,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+        createdAt: true,
+      },
+    });
+
+    await prisma.log.create({
+      data: {
+        userId: req.user.id,
+        acao: "CRIAR_USUARIO",
+        tabelaAfetada: "User",
+        registroId: user.id,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: user,
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "Erro interno" });
+  }
+};
 
 const getAllUsers = async (req, res) => {
   try {
@@ -83,7 +142,7 @@ const getUserById = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { nome, perfil } = req.body;
+  const { nome, email, perfil, senha } = req.body;
 
   try {
     const user = await prisma.user.findUnique({
@@ -105,12 +164,32 @@ const updateUser = async (req, res) => {
       });
     }
 
+    if (email && email !== user.email) {
+      const emailExists = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          error: "Email já registrado",
+        });
+      }
+    }
+
+    const dataToUpdate = {
+      nome: nome || user.nome,
+      email: email || user.email,
+      perfil: perfil || user.perfil,
+    };
+
+    if (senha) {
+      dataToUpdate.senha = await bcrypt.hash(senha, 10);
+    }
+
     const updated = await prisma.user.update({
       where: { id: Number(id) },
-      data: {
-        nome: nome || user.nome,
-        perfil: perfil || user.perfil,
-      },
+      data: dataToUpdate,
     });
 
     await prisma.log.create({
@@ -201,6 +280,7 @@ const getProfile = async (req, res) => {
 };
 
 module.exports = {
+  createUser,
   getAllUsers,
   getUserById,
   updateUser,
