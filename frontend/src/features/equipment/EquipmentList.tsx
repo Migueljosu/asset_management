@@ -7,6 +7,8 @@ import EquipmentForm from './EquipmentForm'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/context/AuthContext'
 import { toast } from 'sonner'
+import { usePagination } from '@/hooks/usePagination'
+import Pagination from '@/components/ui/Pagination'
 
 export default function EquipmentList() {
   const [equipments, setEquipments] = useState<Equipment[]>([])
@@ -20,34 +22,37 @@ export default function EquipmentList() {
   const isFuncionario = role === 'funcionario'
 
   const [search, setSearch] = useState('')
+  const [estadoFilter, setEstadoFilter] = useState<string>('ALL')
   const [expanded, setExpanded] = useState(true)
-
-  const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 4
 
   // Funcionário só vê equipamentos disponíveis
   const visibleEquipments = isFuncionario
     ? equipments.filter((eq) => eq.estado === 'disponivel')
     : equipments
 
-  const filteredEquipments = visibleEquipments.filter((eq) =>
-    eq.nome.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const totalPages = Math.ceil(filteredEquipments.length / ITEMS_PER_PAGE)
-
-  const paginatedEquipments = filteredEquipments.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
+  const {
+    paginatedData: paginatedEquipments,
+    currentPage,
+    totalPages,
+    totalItems,
+    startItem,
+    endItem,
+    goToPrevious,
+    goToNext,
+  } = usePagination<Equipment>({
+    data: visibleEquipments,
+    itemsPerPage: 5,
+    searchFields: ['nome', 'codigo'],
+    searchValue: search,
+    filterFn: (eq) => {
+      if (estadoFilter === 'ALL') return true
+      return eq.estado === estadoFilter
+    },
+  })
 
   useEffect(() => {
     loadEquipments()
   }, [token])
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [search])
 
   const loadEquipments = async () => {
     if (!token) return
@@ -120,6 +125,26 @@ export default function EquipmentList() {
     })
   }
 
+  const estadoOptions = [
+    { value: 'ALL', label: 'Todos os estados' },
+    { value: 'disponivel', label: 'Disponível' },
+    { value: 'reservado', label: 'Reservado' },
+    { value: 'em_uso', label: 'Em uso' },
+    { value: 'manutencao', label: 'Manutenção' },
+    { value: 'inativo', label: 'Inativo' },
+  ]
+
+  const estadoBadge = (estado: string) => {
+    const map: Record<string, string> = {
+      disponivel: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      reservado: 'bg-amber-100 text-amber-700 border-amber-200',
+      em_uso: 'bg-blue-100 text-blue-700 border-blue-200',
+      manutencao: 'bg-orange-100 text-orange-700 border-orange-200',
+      inativo: 'bg-gray-100 text-gray-700 border-gray-200',
+    }
+    return map[estado] || 'bg-gray-100 text-gray-700'
+  }
+
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -166,15 +191,33 @@ export default function EquipmentList() {
           </button>
         </div>
 
-        <Input
-          placeholder="Pesquisar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {/* 🔍 Filtros avançados */}
+        <div className="flex flex-wrap gap-3">
+          <Input
+            placeholder="Pesquisar por nome ou código..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 min-w-[200px]"
+          />
+          {!isFuncionario && (
+            <select
+              value={estadoFilter}
+              onChange={(e) => setEstadoFilter(e.target.value)}
+              className="border rounded-md px-3 py-2 text-sm bg-background"
+              aria-label="Filtrar por estado"
+            >
+              {estadoOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
         {expanded && (
           <div className="space-y-4">
-            {filteredEquipments.length === 0 && (
+            {totalItems === 0 && (
               <p className="text-sm text-muted-foreground">
                 {isFuncionario
                   ? 'Nenhum equipamento disponível no momento.'
@@ -185,13 +228,15 @@ export default function EquipmentList() {
             {paginatedEquipments.map((eq) => (
               <div
                 key={eq.id}
-                className="flex justify-between items-center p-4 border rounded-lg hover:shadow-sm transition"
+                className="flex justify-between items-center p-4 border rounded-lg hover:shadow-md transition bg-background"
               >
-                <div>
+                <div className="space-y-1">
                   <p className="font-semibold">{eq.nome}</p>
                   <p className="text-sm text-muted-foreground">{eq.codigo}</p>
                   {!isFuncionario && (
-                    <p className="text-xs capitalize">{eq.estado}</p>
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${estadoBadge(eq.estado)}`}>
+                      {eq.estado.replace('_', ' ')}
+                    </span>
                   )}
                 </div>
 
@@ -200,7 +245,7 @@ export default function EquipmentList() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setEditingEquipment(eq)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                       disabled={submitting}
                     >
                       Editar
@@ -208,7 +253,7 @@ export default function EquipmentList() {
 
                     <button
                       onClick={() => handleDelete(eq.id)}
-                      className="text-red-600 hover:text-red-800 font-medium"
+                      className="text-red-600 hover:text-red-800 font-medium text-sm"
                       disabled={submitting}
                     >
                       Remover
@@ -217,35 +262,21 @@ export default function EquipmentList() {
                 )}
               </div>
             ))}
-            {/* PAGINAÇÃO */}
-            {totalPages > 1 && (
-              <div className="flex justify-between items-center pt-4">
-                <span className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages}
-                </span>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                  >
-                    Anterior
-                  </button>
-
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                  >
-                    Próxima
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Paginação */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+            />
           </div>
         )}
       </div>
     </div>
   )
 }
+

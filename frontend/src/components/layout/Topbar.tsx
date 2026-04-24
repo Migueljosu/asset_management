@@ -1,4 +1,4 @@
-import { Bell, LogOut, Check, Trash2, X } from 'lucide-react'
+import { Bell, LogOut, Check, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -9,6 +9,7 @@ import {
   deleteNotification,
   Notification,
 } from '@/features/notifications/notificationService'
+import { notificationEmitter, NOTIFICATION_EVENTS } from '@/lib/eventEmitter'
 import { toast } from 'sonner'
 
 export default function Topbar() {
@@ -16,7 +17,6 @@ export default function Topbar() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [naoLidas, setNaoLidas] = useState(0)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const loadNotifications = useCallback(async () => {
@@ -28,17 +28,23 @@ export default function Topbar() {
         setNaoLidas(res.naoLidas || 0)
       }
     } catch {
-      // silencioso — não queremos spam de erro
+      // silencioso
     }
   }, [token])
 
   useEffect(() => {
     loadNotifications()
-    const interval = setInterval(loadNotifications, 30000) // poll a cada 30s
-    return () => clearInterval(interval)
+    const interval = setInterval(loadNotifications, 5000)
+    const unsubscribe = notificationEmitter.on(
+      NOTIFICATION_EVENTS.NOTIFICATION_CREATED,
+      loadNotifications
+    )
+    return () => {
+      clearInterval(interval)
+      unsubscribe()
+    }
   }, [loadNotifications])
 
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -53,9 +59,7 @@ export default function Topbar() {
     if (!token) return
     try {
       await markAsRead(id, token)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, lida: true } : n))
-      )
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, lida: true } : n)))
       setNaoLidas((prev) => Math.max(0, prev - 1))
     } catch {
       toast.error('Erro ao marcar como lida')
@@ -110,12 +114,8 @@ export default function Topbar() {
       <div className="flex items-center gap-6">
         <ThemeToggle />
 
-        {/* SININHO DE NOTIFICAÇÕES */}
         <div className="relative" ref={dropdownRef}>
-          <button
-            className="relative"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
+          <button className="relative" onClick={() => setDropdownOpen(!dropdownOpen)}>
             <Bell size={20} />
             {naoLidas > 0 && (
               <span className="absolute -top-2 -right-2 text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
@@ -153,9 +153,7 @@ export default function Topbar() {
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div
-                          className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${tipoCor(n.tipo)}`}
-                        />
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${tipoCor(n.tipo)}`} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{n.titulo}</p>
                           <p className="text-xs text-muted-foreground line-clamp-2">

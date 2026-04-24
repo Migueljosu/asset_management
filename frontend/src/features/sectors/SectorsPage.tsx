@@ -5,6 +5,9 @@ import { sectorService } from './sectorService'
 import { CreateSectorDTO, Sector } from './types'
 import SectorForm from './SectorForm'
 import { Input } from '@/components/ui/input'
+import { usePagination } from '@/hooks/usePagination'
+import Pagination from '@/components/ui/Pagination'
+import { Building2, Pencil, Trash2 } from 'lucide-react'
 
 export default function SectorsPage() {
   const [sectors, setSectors] = useState<Sector[]>([])
@@ -16,9 +19,21 @@ export default function SectorsPage() {
 
   const { token } = useAuth()
 
-  const filteredSectors = sectors.filter((sector) =>
-    sector.nome.toLowerCase().includes(search.toLowerCase())
-  )
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    totalItems,
+    startItem,
+    endItem,
+    goToPrevious,
+    goToNext,
+  } = usePagination<Sector>({
+    data: sectors,
+    itemsPerPage: 5,
+    searchFields: ['nome'],
+    searchValue: search,
+  })
 
   useEffect(() => {
     loadSectors()
@@ -44,7 +59,10 @@ export default function SectorsPage() {
     setSubmitting(true)
     try {
       await sectorService.create(token, data)
+      toast.success('Setor criado com sucesso')
       await loadSectors()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao criar setor')
     } finally {
       setSubmitting(false)
     }
@@ -57,7 +75,10 @@ export default function SectorsPage() {
     try {
       await sectorService.update(token, editingSector.id, data)
       setEditingSector(null)
+      toast.success('Setor atualizado com sucesso')
       await loadSectors()
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar setor')
     } finally {
       setSubmitting(false)
     }
@@ -113,60 +134,68 @@ export default function SectorsPage() {
       />
 
       <div className="bg-card p-6 rounded-lg border border-border shadow-sm space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-3">
           <h2 className="text-xl font-semibold">Lista</h2>
-
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {expanded ? 'Ocultar' : 'Expandir'}
-          </button>
+          <span className="text-sm text-muted-foreground">{totalItems} setor(es)</span>
         </div>
 
         <Input
-          placeholder="Pesquisar..."
+          placeholder="Pesquisar setor..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
         {expanded && (
-          <div className="space-y-4">
-            {filteredSectors.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum setor encontrado.</p>
+          <div className="space-y-3">
+            {totalItems === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum setor encontrado.</p>
             )}
 
-            {filteredSectors.map((sector) => (
+            {paginatedData.map((sector) => (
               <div
                 key={sector.id}
-                className="flex justify-between items-center p-4 border rounded-lg hover:shadow-sm transition"
+                className="flex justify-between items-center p-4 border rounded-lg hover:shadow-md transition bg-background"
               >
-                <div>
+                <div className="flex items-center gap-2">
+                  <Building2 size={18} className="text-muted-foreground" />
                   <p className="font-semibold">{sector.nome}</p>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <button
                     onClick={() => setEditingSector(sector)}
-                    className="text-blue-600 hover:text-blue-800 font-medium"
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-sm"
                     disabled={submitting}
                   >
+                    <Pencil size={14} />
                     Editar
                   </button>
 
                   <button
                     onClick={() => handleDelete(sector.id, sector.nome)}
-                    className="text-red-600 hover:text-red-800 font-medium"
+                    className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium text-sm"
                     disabled={submitting}
                   >
+                    <Trash2 size={14} />
                     Remover
                   </button>
                 </div>
               </div>
             ))}
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+            />
           </div>
         )}
       </div>
     </div>
   )
 }
+

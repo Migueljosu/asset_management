@@ -1,3 +1,9 @@
+/**
+ * @swagger
+ * tags:
+ *   - name: Notification
+ */
+
 const router = require("express").Router();
 const auth = require("../middlewares/authMiddleware");
 
@@ -14,4 +20,3 @@ router.put("/:id/read", auth, markAsRead);
 router.delete("/:id", auth, deleteNotification);
 
 module.exports = router;
-

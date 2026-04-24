@@ -261,6 +261,11 @@ const cancelSchedule = async (req, res) => {
         throw new Error("Sem permissão");
       }
 
+      // Funcionário só pode cancelar agendamentos pendentes
+      if (!isAdmin && schedule.estado === "aprovado") {
+        throw new Error("Não pode cancelar um agendamento já aprovado");
+      }
+
       if (["cancelado", "concluido"].includes(schedule.estado)) {
         throw new Error("Agendamento não pode ser cancelado");
       }

@@ -6,6 +6,9 @@ import { TransferItem, TransferableEquipment } from './types'
 import { transferService } from './transferService'
 import { Sector } from '../sectors/types'
 import { Button } from '@/components/ui/Button'
+import { usePagination } from '@/hooks/usePagination'
+import Pagination from '@/components/ui/Pagination'
+import { ArrowRightLeft, Package, Building2, Calendar } from 'lucide-react'
 
 export default function TransfersPage() {
   const { token } = useAuth()
@@ -16,6 +19,7 @@ export default function TransfersPage() {
   const [selectedSectorId, setSelectedSectorId] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     loadData()
@@ -79,8 +83,29 @@ export default function TransfersPage() {
     }
   }
 
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    totalItems,
+    startItem,
+    endItem,
+    goToPrevious,
+    goToNext,
+  } = usePagination<TransferItem>({
+    data: transfers,
+    itemsPerPage: 5,
+    searchFields: ['equipmentName', 'originSectorName', 'destinationSectorName'],
+    searchValue: search,
+  })
+
   if (loading) {
-    return <div className="text-center py-10">A carregar transferências...</div>
+    return (
+      <div className="text-center py-10">
+        <div className="animate-spin h-8 w-8 border-b-2 border-primary mx-auto mb-3" />
+        A carregar transferências...
+      </div>
+    )
   }
 
   return (
@@ -105,7 +130,8 @@ export default function TransfersPage() {
                 setSelectedEquipmentId(e.target.value)
                 setSelectedSectorId('')
               }}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 bg-background"
+              aria-label="Selecionar equipamento"
             >
               <option value="">Selecione um equipamento em uso</option>
               {transferables.map((item) => (
@@ -118,8 +144,9 @@ export default function TransfersPage() {
             <select
               value={selectedSectorId}
               onChange={(e) => setSelectedSectorId(e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 bg-background"
               disabled={!selectedEquipmentId}
+              aria-label="Selecionar setor de destino"
             >
               <option value="">Selecione o setor de destino</option>
               {destinationOptions.map((sector) => (
@@ -137,24 +164,65 @@ export default function TransfersPage() {
       </form>
 
       <div className="bg-card p-6 rounded-lg border border-border shadow-sm space-y-4">
-        <h2 className="text-xl font-semibold">Histórico</h2>
+        <div className="flex justify-between items-center flex-wrap gap-3">
+          <h2 className="text-xl font-semibold">Histórico</h2>
+          <span className="text-sm text-muted-foreground">{totalItems} transferência(s)</span>
+        </div>
 
-        {transfers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sem transferências registadas.</p>
+        <input
+          type="text"
+          placeholder="Pesquisar por equipamento ou setor..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+        />
+
+        {totalItems === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Sem transferências registadas.</p>
         ) : (
-          transfers.map((transfer) => (
-            <div key={transfer.id} className="p-4 border rounded-lg">
-              <p className="font-semibold">{transfer.equipmentName}</p>
-              <p className="text-sm text-muted-foreground">
-                {transfer.originSectorName} → {transfer.destinationSectorName}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(transfer.transferredAt).toLocaleString()}
-              </p>
+          <>
+            <div className="space-y-3">
+              {paginatedData.map((transfer) => (
+                <div
+                  key={transfer.id}
+                  className="p-4 border rounded-lg hover:shadow-md transition bg-background"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold flex items-center gap-1">
+                      <Package size={14} />
+                      {transfer.equipmentName}
+                    </p>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Building2 size={12} />
+                      {transfer.originSectorName}
+                    </span>
+                    <ArrowRightLeft size={14} className="text-muted-foreground" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Building2 size={12} />
+                      {transfer.destinationSectorName}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <Calendar size={10} />
+                    {new Date(transfer.transferredAt).toLocaleString()}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+            />
+          </>
         )}
       </div>
     </div>
   )
 }
+

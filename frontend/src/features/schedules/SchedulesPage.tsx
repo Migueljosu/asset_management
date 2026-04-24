@@ -144,7 +144,9 @@ export default function SchedulesPage() {
             title="Agendamentos Pendentes"
             emptyMessage="Não existem agendamentos pendentes."
             onApprove={handleApprove}
+            onCancel={handleCancel}
             showUser
+            userRole="admin"
           />
 
           <ScheduleList
@@ -152,7 +154,9 @@ export default function SchedulesPage() {
             title="Agendamentos Aprovados"
             emptyMessage="Não existem agendamentos aprovados."
             onComplete={handleComplete}
+            onCancel={handleCancel}
             showUser
+            userRole="admin"
           />
 
           <ScheduleList
@@ -160,6 +164,7 @@ export default function SchedulesPage() {
             title="Histórico"
             emptyMessage="Sem histórico de agendamentos."
             showUser
+            userRole="admin"
           />
         </div>
       ) : (
@@ -168,6 +173,7 @@ export default function SchedulesPage() {
           title="Os Meus Agendamentos"
           emptyMessage="Ainda não criou nenhum agendamento."
           onCancel={handleCancel}
+          userRole="funcionario"
         />
       )}
     </div>
