@@ -83,6 +83,7 @@ npm run db:seed
 ```
 
 O seed cria automaticamente:
+
 - 3 utilizadores: **admin**, **técnico**, **funcionário**
 - 12 setores/departamentos
 - 25 equipamentos variados (laptops, desktops, monitores, servidores, etc.)
@@ -97,9 +98,9 @@ npm run dev
 node src/server.js
 ```
 
-O backend ficará disponível em: **http://localhost:3000**
+O backend ficará disponível em: **<http://localhost:3000>**
 
-Documentação Swagger: **http://localhost:3000/api/docs**
+Documentação Swagger: **<http://localhost:3000/api/docs>**
 
 ### 6. Configurar o Frontend
 
@@ -127,7 +128,7 @@ Inicie o frontend:
 npm run dev
 ```
 
-O frontend ficará disponível em: **http://localhost:5173**
+O frontend ficará disponível em: **<http://localhost:5173>**
 
 ---
 
@@ -252,6 +253,7 @@ npm test
 ```
 
 Resultado esperado:
+
 ```
 Test Suites: 2 passed, 2 total
 Tests:       15 passed, 15 total

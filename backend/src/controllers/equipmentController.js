@@ -177,7 +177,7 @@ const deleteEquipment = async (req, res) => {
 // ================= GET ALL =================
 const getAllEquipments = async (req, res) => {
   try {
-    let { page = 1, limit = 10, estado, nome } = req.query;
+    let { page = 1, limit = 1000, estado, nome } = req.query;
 
     page = Number(page);
     limit = Number(limit);

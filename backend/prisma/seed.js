@@ -44,7 +44,7 @@ async function main() {
     }),
   ]);
 
-  console.log(`✅ ${users.length} usuários criados`);
+  console.log(` ${users.length} usuários criados`);
   users.forEach((u) => console.log(`   - ${u.nome} (${u.perfil}) → ${u.email}`));
 
   // ============================================================
@@ -75,7 +75,7 @@ async function main() {
     setores.push(s);
   }
 
-  console.log(`✅ ${setores.length} setores criados`);
+  console.log(` ${setores.length} setores criados`);
 
   // ============================================================
   // 3. EQUIPAMENTOS (20+)
@@ -83,29 +83,29 @@ async function main() {
   const equipamentosData = [
     { nome: "Laptop Dell Latitude 5520", codigo: "EQ-LAP-001", estado: "disponivel" },
     { nome: "Laptop HP ProBook 450", codigo: "EQ-LAP-002", estado: "disponivel" },
-    { nome: "Laptop Lenovo ThinkPad T14", codigo: "EQ-LAP-003", estado: "em_uso" },
+    { nome: "Laptop Lenovo ThinkPad T14", codigo: "EQ-LAP-003", estado: "disponivel" },
     { nome: "Desktop Dell OptiPlex 7090", codigo: "EQ-DES-001", estado: "disponivel" },
-    { nome: "Desktop HP EliteDesk 800", codigo: "EQ-DES-002", estado: "manutencao" },
+    { nome: "Desktop HP EliteDesk 800", codigo: "EQ-DES-002", estado: "disponivel" },
     { nome: "Monitor Dell 27\" 4K", codigo: "EQ-MON-001", estado: "disponivel" },
-    { nome: "Monitor LG 32\" UltraWide", codigo: "EQ-MON-002", estado: "em_uso" },
+    { nome: "Monitor LG 32\" UltraWide", codigo: "EQ-MON-002", estado: "disponivel" },
     { nome: "Monitor Samsung 24\" Curvo", codigo: "EQ-MON-003", estado: "disponivel" },
     { nome: "Impressora HP LaserJet Pro", codigo: "EQ-IMP-001", estado: "disponivel" },
-    { nome: "Impressora Epson EcoTank", codigo: "EQ-IMP-002", estado: "manutencao" },
+    { nome: "Impressora Epson EcoTank", codigo: "EQ-IMP-002", estado: "disponivel" },
     { nome: "Projetor Epson EB-X51", codigo: "EQ-PRO-001", estado: "disponivel" },
-    { nome: "Projetor BenQ MX560", codigo: "EQ-PRO-002", estado: "em_uso" },
+    { nome: "Projetor BenQ MX560", codigo: "EQ-PRO-002", estado: "disponivel" },
     { nome: "Scanner Fujitsu ScanSnap", codigo: "EQ-SCA-001", estado: "disponivel" },
-    { nome: "Servidor Dell PowerEdge R750", codigo: "EQ-SRV-001", estado: "em_uso" },
+    { nome: "Servidor Dell PowerEdge R750", codigo: "EQ-SRV-001", estado: "disponivel" },
     { nome: "Servidor HPE ProLiant DL380", codigo: "EQ-SRV-002", estado: "disponivel" },
-    { nome: "Switch Cisco Catalyst 2960", codigo: "EQ-RED-001", estado: "em_uso" },
+    { nome: "Switch Cisco Catalyst 2960", codigo: "EQ-RED-001", estado: "disponivel" },
     { nome: "Access Point Ubiquiti U6-Pro", codigo: "EQ-RED-002", estado: "disponivel" },
     { nome: "Nobreak APC 3000VA", codigo: "EQ-NOB-001", estado: "disponivel" },
-    { nome: "Nobreak Eaton 5PX 1500VA", codigo: "EQ-NOB-002", estado: "manutencao" },
+    { nome: "Nobreak Eaton 5PX 1500VA", codigo: "EQ-NOB-002", estado: "disponivel" },
     { nome: "Tablet iPad Pro 12.9\"", codigo: "EQ-TAB-001", estado: "disponivel" },
-    { nome: "Tablet Samsung Galaxy Tab S9", codigo: "EQ-TAB-002", estado: "em_uso" },
+    { nome: "Tablet Samsung Galaxy Tab S9", codigo: "EQ-TAB-002", estado: "disponivel" },
     { nome: "Câmera Logitech Brio 4K", codigo: "EQ-CAM-001", estado: "disponivel" },
     { nome: "Headset Jabra Evolve2 65", codigo: "EQ-HEA-001", estado: "disponivel" },
-    { nome: "Headset Plantronics Voyager", codigo: "EQ-HEA-002", estado: "em_uso" },
-    { nome: "Roteador MikroTik RB2011", codigo: "EQ-ROT-001", estado: "inativo" },
+    { nome: "Headset Plantronics Voyager", codigo: "EQ-HEA-002", estado: "disponivel" },
+    { nome: "Roteador MikroTik RB2011", codigo: "EQ-ROT-001", estado: "disponivel" },
   ];
 
   const equipamentos = [];
@@ -118,7 +118,7 @@ async function main() {
     equipamentos.push(e);
   }
 
-  console.log(`✅ ${equipamentos.length} equipamentos criados`);
+  console.log(`${equipamentos.length} equipamentos criados`);
 
   // Resumo por estado
   const estados = {};
@@ -129,7 +129,7 @@ async function main() {
     console.log(`   - ${estado}: ${count}`);
   }
 
-  console.log("\n🎉 Seed concluído com sucesso!");
+  console.log("\nSeed concluído com sucesso!");
   console.log("\nCredenciais de acesso:");
   console.log("  Admin:      admin@asset.com     / 12345678");
   console.log("  Técnico:    tecnico@asset.com   / 12345678");

@@ -1,6 +1,11 @@
 const prisma = require("../utils/prisma");
 const bcrypt = require("bcrypt");
-const { createUserSchema, updateUserSchema, changePasswordSchema, updateProfileSchema } = require("../validators/userValidator");
+const {
+  createUserSchema,
+  updateUserSchema,
+  changePasswordSchema,
+  updateProfileSchema,
+} = require("../validators/userValidator");
 const { createNotification } = require("./notificationController");
 
 const notifyAdmins = async (titulo, mensagem, tipo = "info") => {
@@ -64,7 +69,7 @@ const createUser = async (req, res) => {
     await notifyAdmins(
       "Novo Utilizador",
       `O utilizador ${user.nome} (${user.email}) com perfil ${user.perfil} foi criado.`,
-      "success"
+      "success",
     );
 
     res.status(201).json({
@@ -287,7 +292,7 @@ const deleteUser = async (req, res) => {
     await notifyAdmins(
       "Utilizador Eliminado",
       `O utilizador ${user.nome} (${user.email}) foi eliminado do sistema.`,
-      "warning"
+      "warning",
     );
 
     res.json({
@@ -296,6 +301,13 @@ const deleteUser = async (req, res) => {
     });
   } catch (error) {
     console.error("[deleteUser]", error);
+    if (error.code === "P2003") {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Não é possível eliminar o usuário porque existem dados associados (ex: notificações, logs ou manutenções).",
+      });
+    }
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
@@ -378,7 +390,9 @@ const changePassword = async (req, res) => {
         details: error.errors,
       });
     }
+
     console.error("[changePassword]", error);
+
     res.status(500).json({ success: false, error: "Erro interno" });
   }
 };
