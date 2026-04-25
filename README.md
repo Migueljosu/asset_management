@@ -271,4 +271,4 @@ docker run -p 5173:5173 asset-management-frontend
 
 ## Licença
 
-ISC
+MIT
