@@ -7,7 +7,7 @@ const generateToken = (user) => {
       perfil: user.perfil,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: "12h" }
   );
 };
 
