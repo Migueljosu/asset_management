@@ -58,6 +58,7 @@ export default function DashboardFeature() {
           {data.byStatus.manutencao}
         </>
       ),
+      
     },
     {
       title: 'Anomalias',
